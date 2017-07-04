@@ -11,7 +11,7 @@ FEATURES:
 
 IMPROVEMENTS:
   - `New-JiraIssue`: _Description_ and _Priority_ are no longer mandatory (#53, [@brianbunke][])
-  - Added property `Components` to `PSjira.Project` (#68, [@axxelG][])
+  - Added property `Components` to `JiraPS.Project` (#68, [@axxelG][])
   - `Invoke-JiraIssueTransition`: add support for parameters _Fields_, _Comment_ and _Assignee_ (#38, [@padgers][])
   - `New-JiraIssue`: support parameter _FixVersion_ (#103, [@Dejulia489][])
   - `Set-JiraIssue`: support parameter _FixVersion_ (#103, [@Dejulia489][])
@@ -85,7 +85,7 @@ BUG FIXES:
 
 IMPROVEMENTS:
 
-  - Get-JiraIssueCreateMetadata: changed output type from a generic PSCustomObject to new type PSJira.CreateMetaField
+  - Get-JiraIssueCreateMetadata: changed output type from a generic PSCustomObject to new type JiraPS.CreateMetaField
   - Get-JiraIssueCreateMetadata: now returns additional properties for field metadata, such as AllowedValues
 
 ## 1.2.0 (Oct 16, 2015)
@@ -116,7 +116,7 @@ IMPROVEMENTS:
 
 BUG FIXES:
 
-  - PSJira.User: ToString() now works as expected
+  - JiraPS.User: ToString() now works as expected
 
 ## 1.0.0 (Aug 5, 2015)
 
