@@ -20,7 +20,7 @@ function Add-JiraIssueWorklog {
     .INPUTS
        This function can accept JiraPS.Issue objects via pipeline.
     .OUTPUTS
-       This function outputs the JiraPS.Worklogitem object created.
+       This function outputs the JiraPS.WorklogItem object created.
     .NOTES
        This function requires either the -Credential parameter to be passed or a persistent JIRA session. See New-JiraSession for more details.  If neither are supplied, this function will run with anonymous access to JIRA.
     #>

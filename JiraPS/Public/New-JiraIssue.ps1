@@ -48,7 +48,7 @@ function New-JiraIssue {
         [Parameter(Mandatory = $false)]
         [String] $Description,
 
-        # User that shall be registed as the reporter.
+        # User that shall be registered as the reporter.
         # If left empty, the currently authenticated user will be used.
         [Parameter(Mandatory = $false)]
         [String] $Reporter,

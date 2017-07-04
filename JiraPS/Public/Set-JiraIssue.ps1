@@ -3,14 +3,14 @@ function Set-JiraIssue {
     .Synopsis
        Modifies an existing issue in JIRA
     .DESCRIPTION
-       This function modifies an existing isue in JIRA.  This can include changing
+       This function modifies an existing issue in JIRA.  This can include changing
        the issue's summary or description, or assigning the issue.
     .EXAMPLE
        Set-JiraIssue -Issue TEST-01 -Summary 'Modified issue summary' -Description 'This issue has been modified by PowerShell'
        This example changes the summary and description of the JIRA issue TEST-01.
     .EXAMPLE
        $issue = Get-JiraIssue TEST-01
-       $issue | Set-JiraIssue -Description "$($issue.Description)`n`nEdit: Also foo."
+       $issue | Set-JiraIssue -Description "$( $issue.Description )`n`nEdit: Also foo."
        This example appends text to the end of an existing issue description by using
        Get-JiraIssue to obtain a reference to the current issue and description.
     .EXAMPLE
@@ -49,7 +49,7 @@ function Set-JiraIssue {
         [Alias('FixVersions')]
         [String[]] $FixVersion,
 
-        # New assignee of the issue. Enter 'Unassigned' to unassign the issue.
+        # New assignee of the issue. Enter 'Unassigned' to remove the assignee the issue.
         [Parameter(Mandatory = $false)]
         [Object] $Assignee,
 
