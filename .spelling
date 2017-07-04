@@ -1,3 +1,4 @@
+`n
 AppVeyor
 Atlassian
 Atlassian's
@@ -23,8 +24,8 @@ hashtables
 hotfix
 img
 IssueLink
-Jira
 JIRA
+Jira
 jira-screen-createissue
 JIRA's
 JiraPS
@@ -41,6 +42,7 @@ powershell
 PowerShell
 powershell.exe
 PowerShellGet
+PrivateData
 projectCategory
 ps1
 PSGallery
@@ -57,6 +59,7 @@ Add-JiraIssueComment
 Add-JiraIssueLink
 Add-JiraIssueWatcher
 Add-JiraIssueWorklog
+ConvertFrom-Json
 ConvertFrom-Json2
 ConvertTo-JiraComment
 ConvertTo-JiraComponent
@@ -99,6 +102,7 @@ Get-JiraSession
 Get-JiraUser
 Invoke-JiraIssueTransition
 Invoke-JiraMethod
+Invoke-WebRequest
 New-JiraGroup
 New-JiraIssue
 New-JiraSession
@@ -156,6 +160,7 @@ IncludeDebug
 IncludeInactive
 InputObject
 IssueType
+LinkId
 LinkType
 MaxJsonLength
 MaxResults
