@@ -332,6 +332,7 @@ task ConvertMarkdown -Partial @ConvertMarkdown InstallPandoc, {
 #endregion BuildRelease
 
 #region Test
+task CodeCov {$env:CodeCov = $true}, Test
 task Test Init, {
     assert { Test-Path $env:BHBuildOutput -PathType Container }
 
@@ -347,7 +348,7 @@ task Test Init, {
 
     try {
         $parameter = @{
-            Script       = "$env:BHBuildOutput/Tests/*"
+            Script       = "$env:BHBuildOutput/Tests"
             Tag          = $Tag
             ExcludeTag   = $ExcludeTag
             PassThru     = $true
@@ -355,7 +356,11 @@ task Test Init, {
             OutputFormat = "NUnitXml"
             CodeCoverage = $CodeCoverageFiles
         }
-        $TestResults = Invoke-Pester @parameter
+        if ($env:CodeCov) {
+            $parameter["Script"] = "$BuildRoot/Tests"
+            $parameter["ExcludeTag"] = "CommandHelp"
+        }
+        $global:TestResults = Invoke-Pester @parameter
 
         if ($null -ne $CodeCoverageFiles) {
             $CoveragePercent = $TestResults.CodeCoverage.NumberOfCommandsExecuted / $TestResults.CodeCoverage.NumberOfCommandsAnalyzed
@@ -373,16 +378,17 @@ task Test Init, {
             # }
         }
 
-        If ('AppVeyor' -eq $env:BHBuildSystem) {
-            BuildHelpers\Add-TestResultToAppveyor -TestFile "$BuildRoot/TestResult.xml"
+        If ($env:CodeCov) {
+            # BuildHelpers\Add-TestResultToAppveyor -TestFile "$BuildRoot/TestResult.xml"
 
             Import-Module "./Tools/Modules/CodeCovIo"
             $Params = @{
                 CodeCoverage = $TestResults.CodeCoverage
-                RepoRoot     = $env:BHBuildOutput
+                RepoRoot     = $BuildRoot
             }
             $CodeCovJsonPath = Export-CodeCovIoJson @Params
-            Invoke-UploadCoveCoveIoReport -Path $CodeCovJsonPath
+            Write-Debug "halt!"
+            # Invoke-UploadCoveCoveIoReport -Path $CodeCovJsonPath
             Remove-Module CodeCovIo
         }
 

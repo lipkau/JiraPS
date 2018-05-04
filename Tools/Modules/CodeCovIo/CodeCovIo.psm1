@@ -49,11 +49,12 @@ function Add-UniqueFileLineToTable {
         foreach ($command in $Command) {
             #Find the file as Git sees it
             $file = $command.File
-            $fileKey = $file.replace($RepoRoot, '').TrimStart('\').replace('\', '/')
-            $fileKey = $fileKeys.where{$_ -like $fileKey}
+            $fileKey = $file.Replace($RepoRoot, '').TrimStart('\').Replace('\', '/')
+            $fileKey = $fileKeys | Where-Object {$_ -like $fileKey}
 
             if ($null -eq $fileKey) {
-                Write-Warning -Message "Unexpected error filekey was null"
+                Write-Warning -Message "Unexpected error filekey was null: $file"
+                Write-Host $fileKey
                 continue
             }
             elseif ($fileKey.Count -ne 1) {
@@ -305,6 +306,7 @@ function Invoke-UploadCoveCoveIoReport {
     $null = python -m pip install --upgrade pip
     $null = pip install git+git://github.com/codecov/codecov-python.git
     $uploadResults = codecov -f $resolvedResultFile -X gcov
+    $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
     if ($env:APPVEYOR_REPO_BRANCH) {
         $logPath = (Join-Path -Path $env:TEMP -ChildPath 'codeCovUpload.log')
