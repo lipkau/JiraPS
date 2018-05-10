@@ -43,7 +43,7 @@ function Invoke-JiraMethod {
             "Accept"         = "application/json"
             "Accept-Charset" = "utf-8"
         }
-        foreach ($item in $Headers.Key) { $_headers[$item] = $Headers[$item] }
+        foreach ($key in $Headers.Keys) { $_headers[$key] = $Headers[$key] }
     }
 
     process {
@@ -95,7 +95,10 @@ function Invoke-JiraMethod {
         }
 
         if ($InFile) {
+            $_headers.Remove("Accept")
+            $_headers.Remove("Accept-Charset")
             $splatParameters["InFile"] = $InFile
+            $splatParameters["Headers"] = $_headers
         }
         if ($OutFile) {
             $splatParameters["OutFile"] = $OutFile

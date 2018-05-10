@@ -64,6 +64,22 @@ function Add-JiraIssueAttachment {
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
 
+        function GetFullPath ([string]$Path) {
+            # Thanks to Pester
+            # https://github.com/pester/Pester/blob/5796c95e4d6ff5528b8e14865e3f25e40f01bd65/Functions/TestResults.ps1#L13-L27
+            $File = Split-Path -Path $Path -Leaf
+            $Folder = Split-Path -Path $Path -Parent
+
+            if ( -not ([String]::IsNullOrEmpty($Folder))) {
+                $FolderResolved = Resolve-Path -Path $Folder
+            }
+            else {
+                $FolderResolved = & Resolve-Path -Path $ExecutionContext.SessionState.Path.CurrentFileSystemLocation
+            }
+
+            Write-Output (Join-Path -Path $FolderResolved.ProviderPath -ChildPath $File)
+        }
+
         $resourceURi = "{0}/attachments"
     }
 
@@ -88,14 +104,18 @@ function Add-JiraIssueAttachment {
         $parameter = @{
             URI        = $resourceURi -f $issueObj.RestURL
             Method     = "POST"
+            Headers    = @{
+                'X-Atlassian-Token' = 'nocheck'
+            }
             Credential = $Credential
         }
 
         foreach ($file in $FilePath) {
-            $parameter["InFile"] = $file
+            $file = Get-Item (GetFullPath $file) -ErrorAction Stop
+            $parameter["InFile"] = $file.FullName
 
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($PSCmdlet.ShouldProcess($IssueObj.Key, "Adding attachment '$($fileName)'.")) {
+            if ($PSCmdlet.ShouldProcess($IssueObj.Key, "Adding attachment '$($file.Name)'.")) {
                 $rawResult = Invoke-JiraMethod @parameter
 
                 if ($PassThru) {

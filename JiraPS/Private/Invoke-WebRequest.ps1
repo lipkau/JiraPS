@@ -103,11 +103,13 @@ function Invoke-WebRequest {
         }
 
         if ($InFile) {
-            $boundary = [System.Guid]::NewGuid().ToString()
-            $enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
             $fileName = Split-Path -Path $InFile -Leaf
-            $readFile = Get-Content -Path $InFile -Encoding Byte
-            $fileEnc = $enc.GetString($readFile)
+            $boundary = [System.Guid]::NewGuid().ToString()
+
+            $fileBin = [System.IO.File]::ReadAllBytes($InFile)
+            $enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+
+            $fileEnc = $enc.GetString($fileBin)
             $PSBoundParameters["Body"] = @'
 --{0}
 Content-Disposition: form-data; name="file"; filename="{1}"
@@ -118,7 +120,6 @@ Content-Type: application/octet-stream
 
 '@ -f $boundary, $fileName, $fileEnc
 
-            $PSBoundParameters["Headers"]['X-Atlassian-Token'] = 'nocheck'
             $PSBoundParameters["ContentType"] = "multipart/form-data; boundary=`"$boundary`""
             $null = $PSBoundParameters.Remove("InFile")
         }
