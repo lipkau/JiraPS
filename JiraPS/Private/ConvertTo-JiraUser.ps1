@@ -1,5 +1,6 @@
 function ConvertTo-JiraUser {
     [CmdletBinding()]
+    [OutputType([AtlassianPS.JiraPS.User])]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,34 +8,24 @@ function ConvertTo-JiraUser {
     )
 
     process {
-        foreach ($i in $InputObject) {
+        foreach ($object in $InputObject) {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
 
-            $props = @{
-                'Key'          = $i.key
-                'AccountId'    = $i.accountId
-                'Name'         = $i.name
-                'DisplayName'  = $i.displayName
-                'EmailAddress' = $i.emailAddress
-                'Active'       = [System.Convert]::ToBoolean($i.active)
-                'AvatarUrl'    = $i.avatarUrls
-                'TimeZone'     = $i.timeZone
-                'Locale'       = $i.locale
-                'Groups'       = $i.groups.items
-                'RestUrl'      = $i.self
-            }
-
-            if ($i.groups) {
-                $props.Groups = $i.groups.items.name
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.User')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.Name)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.User](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        key,
+                    accountId,
+                    name,
+                    displayName,
+                    emailAddress,
+                    @{Name = "active"; Expression = { [System.Convert]::ToBoolean($_.active) } },
+                    @{Name = "avatar"; Expression = { ConvertTo-JiraAvatar $_.avatarUrls } },
+                    timeZone,
+                    locale,
+                    accountType,
+                    @{Name = "groups"; Expression = { if ($_.groups) { $_.groups.items.name } else { $null } } },
+                    @{Name = "RestUrl"; Expression = { $_.self } }
+                )
+            )
         }
     }
 }

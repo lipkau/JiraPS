@@ -1,8 +1,8 @@
 ﻿#region Dependencies
 # Load the ConfluencePS namespace from C#
-# if (!("" -as [Type])) {
-#     Add-Type -Path (Join-Path $PSScriptRoot JiraPS.Types.cs) -ReferencedAssemblies Microsoft.CSharp, Microsoft.PowerShell.Commands.Utility, System.Management.Automation
-# }
+if (!("" -as [Type])) {
+    Add-Type -Path (Join-Path $PSScriptRoot JiraPS.Types.cs) -ReferencedAssemblies Microsoft.CSharp, Microsoft.PowerShell.Commands.Utility, System.Management.Automation, System.Text.RegularExpressions
+}
 # if ($PSVersionTable.PSVersion.Major -lt 5) {
 #     Add-Type -Path (Join-Path $PSScriptRoot JiraPS.Attributes.cs) -ReferencedAssemblies Microsoft.CSharp, Microsoft.PowerShell.Commands.Utility, System.Management.Automation
 # }
