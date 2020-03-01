@@ -256,7 +256,12 @@ function Invoke-JiraMethod {
                         }
                     }
                     else {
-                        $response
+                        if ($OutputType) {
+                            Convert-Result -InputObject $response -OutputType $OutputType
+                        }
+                        else {
+                            $response
+                        }
                     }
                 }
                 else {

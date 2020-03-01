@@ -46,9 +46,25 @@ namespace AtlassianPS
             public Avatar Avatar { get; set; }
             public String TimeZone { get; set; }
             public String Locale { get; set; }
-            public AccountType AccountType { get; set; }
+            public Nullable<AccountType> AccountType { get; set; }
             public String[] Groups { get; set; }
             public Uri RestUrl { get; set; }
+
+            public Nullable<KeyValuePair<string, string>> identify()
+            {
+                if (!String.IsNullOrEmpty(AccountId))
+                {
+                    return new KeyValuePair<string, string>("accountId", AccountId);
+                }
+                else if (!String.IsNullOrEmpty(Key))
+                {
+                    return new KeyValuePair<string, string>("username", Key);
+                }
+                else
+                {
+                    return null;
+                }
+            }
 
             public override string ToString()
             {

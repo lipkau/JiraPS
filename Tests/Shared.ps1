@@ -33,7 +33,7 @@ function defParam($command, $name) {
 
 function defAlias($command, $name, $definition) {
     It "Supports the $name alias for the $definition parameter" {
-        $command.Parameters.Item($definition).Aliases | Where-Object -FilterScript {$_ -eq $name} | Should Not BeNullOrEmpty
+        $command.Parameters.Item($definition).Aliases | Where-Object -FilterScript { $_ -eq $name } | Should Not BeNullOrEmpty
     }
 }
 
@@ -66,35 +66,5 @@ function checkPsType($obj, $typeName) {
     }
     It "Can cast to string" {
         castsToString($obj)
-    }
-}
-
-function ShowMockInfo {
-    [CmdletBinding()]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingWriteHost', '')]
-    param(
-        $functionName,
-        [String[]] $params
-    )
-    if ($script:ShowMockData) { #TODO
-        Write-Host "       Mocked $functionName" -ForegroundColor Cyan
-        foreach ($p in $params) {
-            Write-Host "         [$p]  $(Get-Variable -Name $p -ValueOnly -ErrorAction SilentlyContinue)" -ForegroundColor Cyan
-        }
-    }
-}
-
-Mock "Write-Debug" {
-    MockedDebug $Message
-}
-
-function MockedDebug {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingWriteHost', '')]
-    [CmdletBinding()]
-    param(
-        $Message
-    )
-    if ($script:ShowDebugText) {
-        Write-Host "       [DEBUG] $Message" -ForegroundColor Yellow
     }
 }

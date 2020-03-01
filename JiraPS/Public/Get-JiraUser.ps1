@@ -1,32 +1,13 @@
 function Get-JiraUser {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( DefaultParameterSetName = 'Self' )]
+    [OutputType([AtlassianPS.JiraPS.User])]
     param(
         [Parameter( Position = 0, Mandatory, ValueFromPipelineByPropertyName, ParameterSetName = 'ByUserName' )]
-        [AllowEmptyString()]
-        [Alias('User', 'Name')]
-        [String[]]
-        $UserName,
-
-        [Parameter( Position = 0, Mandatory, ParameterSetName = 'ByInputObject' )]
-        [Object[]] $InputObject,
-
-        [Parameter( ParameterSetName = 'ByInputObject' )]
-        [Parameter( ParameterSetName = 'ByUserName' )]
-        [Switch]$Exact,
-
-        [Switch]
-        $IncludeInactive,
-
-        [Parameter( ParameterSetName = 'ByUserName' )]
-        [ValidateRange(1, 1000)]
-        [UInt32]
-        $MaxResults = 50,
-
-        [Parameter( ParameterSetName = 'ByUserName' )]
         [ValidateNotNullOrEmpty()]
-        [UInt64]
-        $Skip = 0,
+        [Alias('AccountId', 'Key')]
+        [AtlassianPS.JiraPS.User[]]
+        $UserName,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -40,84 +21,55 @@ function Get-JiraUser {
         $server = Get-JiraConfigServer -ErrorAction Stop
 
         $selfResourceUri = "$server/rest/api/latest/myself"
-        $searchResourceUri = "$server/rest/api/latest/user/search?username={0}"
-        $exactResourceUri = "$server/rest/api/latest/user?username={0}"
-
-        if ($IncludeInactive) {
-            $searchResourceUri += "&includeInactive=true"
-        }
-        if ($MaxResults) {
-            $searchResourceUri += "&maxResults=$MaxResults"
-        }
-        if ($Skip) {
-            $searchResourceUri += "&startAt=$Skip"
-        }
+        $exactResourceUri = "$server/rest/api/latest/user?{0}={1}"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        $ParameterSetName = ''
-        switch ($PsCmdlet.ParameterSetName) {
-            'ByInputObject' { $UserName = $InputObject.Name; $ParameterSetName = 'ByUserName'; $Exact = $true }
-            'ByUserName' { $ParameterSetName = 'ByUserName' }
-            'Self' { $ParameterSetName = 'Self' }
-        }
-
-        switch ($ParameterSetName) {
+        switch ($PsCmdLet.ParameterSetName) {
             "Self" {
                 $resourceURi = $selfResourceUri
 
                 $parameter = @{
                     URI        = $resourceURi
                     Method     = "GET"
+                    OutputType = "JiraUser"
                     Credential = $Credential
                 }
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                $result = Invoke-JiraMethod @parameter
+                if ($result = Invoke-JiraMethod @parameter) {
+                    $restUrl = $(if (([Uri]$result.RestUrl).Query) { "&" } else { "?" }) + "expand=groups"
 
-                Get-JiraUser -UserName $result.Name -Exact
-            }
-            "ByInputObject" {
-                $UserName = $InputObject.Name
-
-                $PsCmdlet.ParameterSetName = "ByUserName"
+                    $parameter["URI"] = "{0}{1}" -f $result.RestUrl, $restUrl
+                    Invoke-JiraMethod @parameter
+                }
             }
             "ByUserName" {
-                $resourceURi = if ($Exact) { $exactResourceUri } else { $searchResourceUri }
+                foreach ($_user in $UserName) {
+                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_user]"
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_user [$_user]"
 
-                foreach ($user in $UserName) {
-                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$user]"
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$user [$user]"
+                    if (-not $_user.identify()) {
+                        $writeErrorSplat = @{
+                            Exception    = "Missing property for identification"
+                            ErrorId      = "InvalidData.User.MissingIdentificationProperty"
+                            Category     = "InvalidData"
+                            Message      = "User needs to be identifiable by AccountId or Key."
+                            TargetObject = $_user
+                        }
+                        WriteError @writeErrorSplat
+                    }
 
                     $parameter = @{
-                        URI        = $resourceURi -f $user
+                        URI        = "$exactResourceUri&expand=groups" -f $_user.identify().Key, $_user.identify().Value
                         Method     = "GET"
+                        OutputType = "JiraUser"
                         Credential = $Credential
                     }
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                    if ($users = Invoke-JiraMethod @parameter) {
-                        foreach ($item in $users) {
-                            $parameter = @{
-                                URI        = "{0}&expand=groups" -f $item.self
-                                Method     = "GET"
-                                Credential = $Credential
-                            }
-                            Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                            $result = Invoke-JiraMethod @parameter
-
-                            Write-Output (ConvertTo-JiraUser -InputObject $result)
-                        }
-                    }
-                    else {
-                        $errorMessage = @{
-                            Category         = "ObjectNotFound"
-                            CategoryActivity = "Searching for user"
-                            Message          = "No results when searching for user $user"
-                        }
-                        Write-Error @errorMessage
-                    }
+                    Invoke-JiraMethod @parameter
                 }
             }
         }
