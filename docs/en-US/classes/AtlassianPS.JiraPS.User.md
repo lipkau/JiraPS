@@ -2,7 +2,6 @@
 layout: documentation
 permalink: /docs/JiraPS/classes/AtlassianPS.JiraPS.User/
 ---
-
 # AtlassianPS.JiraPS.User
 
 ## SYNOPSIS
@@ -19,7 +18,7 @@ New-Object -TypeName AtlassianPS.JiraPS.User [-Property @{}]
 
 ## DESCRIPTION
 
-**fix**The `User` is an object that describes users in Confluence.
+**fix**The `User` is an object that describes users in Jira.
 
 ## REFERENCES
 
@@ -44,7 +43,7 @@ New-Object -TypeName AtlassianPS.JiraPS.User
 
 By providing a string to the constructor, the class will try to guess for what
 field the value was meant.
-The value can be `accountId` , `emailAddress` or `key` .
+The value can be `accountId` , `emailAddress` or `key`.
 
 ```powershell
 New-Object -TypeName AtlassianPS.JiraPS.User -ArgumentList "me@about.io"
@@ -74,7 +73,7 @@ The Key is the identifier of a `User` for Jira Server.
 _This value can't be changed and is assigned by the server._
 
 **This field is only available for Jira Server instances.**
-**For Jira Cloud, please use `accountId` .**
+**For Jira Cloud, please use `accountId`.**
 
 ```yaml
 Type: String
@@ -89,7 +88,7 @@ The AccountId is the identifier of a `User` for Jira Cloud.
 _This value can't be changed and is assigned by the server._
 
 **This field is only available for Jira Cloud instances.**
-**For Jira Server, please use `key` .**
+**For Jira Server, please use `key`.**
 
 ```yaml
 Type: String
@@ -183,9 +182,9 @@ such as normal users, app users, and Jira Service Desk customers.
 
 Valid values:
 
-* atlassian: A regular Atlassian user account.
-* app: A system account used for Connect applications and OAuth 2.0 to represent external systems.
-* customer: A Jira Service Desk account representing an external service desk
+* `atlassian`: A regular Atlassian user account.
+* `app`: A system account used for Connect applications and OAuth 2.0 to represent external systems.
+* `customer`: A Jira Service Desk account representing an external service desk
 
 ```yaml
 Type: AtlassianPS.JiraPS.AccountType
@@ -215,7 +214,24 @@ Default value: False
 
 ## METHODS
 
-### ToString()
+### KeyValuePair[string,string] identify()
+
+Returns a Key-Value pair containing the information of what property
+(with what value) should be used to identify this user.
+
+#### Example
+
+```powershell
+$user.identify()
+```
+
+> ```text
+> Key      Value
+> -------- -------
+> username jon.doe
+> ```
+
+### String ToString()
 
 When casting an object of this class to string, it will use the first none empty
 property in the following order:
@@ -225,4 +241,3 @@ property in the following order:
 3. EmailAddress
 4. Key
 5. AccountId
-

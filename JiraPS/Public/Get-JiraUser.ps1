@@ -3,7 +3,7 @@ function Get-JiraUser {
     [CmdletBinding( DefaultParameterSetName = 'Self' )]
     [OutputType([AtlassianPS.JiraPS.User])]
     param(
-        [Parameter( Position = 0, Mandatory, ValueFromPipelineByPropertyName, ParameterSetName = 'ByUserName' )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ByUserName' )]
         [ValidateNotNullOrEmpty()]
         [Alias('AccountId', 'Key')]
         [AtlassianPS.JiraPS.User[]]
