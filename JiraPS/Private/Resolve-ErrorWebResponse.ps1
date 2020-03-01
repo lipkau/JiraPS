@@ -43,8 +43,9 @@ function Resolve-ErrorWebResponse {
 
             try {
                 $responseObject = ConvertFrom-Json -InputObject $responseBody -ErrorAction Stop
+                Write-VErbose $responseObject
 
-                foreach ($_error in ($responseObject.errorMessages + $responseObject.errors)) {
+                foreach ($_error in ($responseObject.errorMessages + $responseObject.message + $responseObject.errors)) {
                     # $_error is a PSCustomObject - therefore can't be $false
                     if ($_error -is [PSCustomObject]) {
                         [String]$_error = ($_error | Out-String)

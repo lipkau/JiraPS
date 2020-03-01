@@ -8,8 +8,7 @@ function Convert-Result {
     )
 
     process {
-        $InputObject | ForEach-Object {
-            $item = $_
+        foreach ($item in $InputObject){
             if ($OutputType) {
                 $converter = "ConvertTo-$OutputType"
             }
