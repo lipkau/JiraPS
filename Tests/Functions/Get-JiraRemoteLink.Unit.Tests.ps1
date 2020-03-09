@@ -1,5 +1,5 @@
 #requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.4.0" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
 
 Describe "Get-JiraRemoteLink" -Tag 'Unit' {
 
@@ -85,24 +85,24 @@ Describe "Get-JiraRemoteLink" -Tag 'Unit' {
             $getResult | Should Not BeNullOrEmpty
 
             $assertMockCalledSplat = @{
-                CommandName = 'Invoke-JiraMethod'
-                ModuleName = 'JiraPS'
+                CommandName     = 'Invoke-JiraMethod'
+                ModuleName      = 'JiraPS'
                 ParameterFilter = {
                     $Method -eq "Get" -and
                     $Uri -like "$jiraServer/rest/api/*/issue/12345/remotelink"
                 }
-                Exactly = $true
-                Times = 1
-                Scope = 'It'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
             }
             Assert-MockCalled @assertMockCalledSplat
 
             $assertMockCalledSplat = @{
                 CommandName = 'ConvertTo-JiraLink'
-                ModuleName = 'JiraPS'
-                Exactly = $true
-                Times = 1
-                Scope = 'It'
+                ModuleName  = 'JiraPS'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
             }
             Assert-MockCalled @assertMockCalledSplat
         }
@@ -112,15 +112,15 @@ Describe "Get-JiraRemoteLink" -Tag 'Unit' {
             $getResult | Should Not BeNullOrEmpty
 
             $assertMockCalledSplat = @{
-                CommandName = 'Invoke-JiraMethod'
-                ModuleName = 'JiraPS'
+                CommandName     = 'Invoke-JiraMethod'
+                ModuleName      = 'JiraPS'
                 ParameterFilter = {
                     $Method -eq "Get" -and
                     $Uri -like "$jiraServer/rest/api/*/issue/12345/remotelink/10000"
                 }
-                Exactly = $true
-                Times = 1
-                Scope = 'It'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
             }
             Assert-MockCalled @assertMockCalledSplat
         }

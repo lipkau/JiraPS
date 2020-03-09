@@ -1,5 +1,5 @@
 #requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.4.0" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
 
 Describe "Remove-JiraIssue" -Tag 'Unit' {
 
@@ -217,7 +217,7 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$URI -like "$jiraServer/rest/api/*/issue/TEST-2?deleteSubTasks=False" -and $Method -eq "Delete"} {
 
-          Write-Error -Exception  -ErrorId
+            Write-Error -Exception  -ErrorId
             $MockedResponse = @"
             {
                 "errorMessages": [
@@ -233,7 +233,7 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
             $errorCategory = 'NotSpecified'
             $errorTarget = $MockedResponse
 
-            $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $Exception,$errorId,$errorCategory,$errorTarget
+            $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $Exception, $errorId, $errorCategory, $errorTarget
             $errorItem.ErrorDetails = "Jira encountered an error: [The issue 'TEST-2' has subtasks.  You must specify the 'deleteSubtasks' parameter to delete this issue and all its subtasks.]"
 
             $PSCmdlet.WriteError($errorItem)
@@ -273,8 +273,8 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
             }
 
             It "Accepts string-based input as a non-pipelined parameter" {
-              {Remove-JiraIssue -IssueId TEST-1 -Force} | Should Not Throw
-              Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+                {Remove-JiraIssue -IssueId TEST-1 -Force} | Should Not Throw
+                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
             }
 
             It "Accepts a JiraPS.Issue object over the pipeline" {

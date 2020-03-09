@@ -1,5 +1,5 @@
 #requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.4.0" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
 
 Describe 'Set-JiraFilter' -Tag 'Unit' {
 
@@ -195,7 +195,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
+                        Name        = "newName"
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -217,7 +217,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        JQL = "newJQL"
+                        JQL         = "newJQL"
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -228,7 +228,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Favorite = $true
+                        Favorite    = $true
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -239,7 +239,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
+                        Name        = "newName"
                         Description = "newDescription"
                     }
                     Set-JiraFilter @parameter
@@ -251,8 +251,8 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
-                        JQL = "newJQL"
+                        Name        = "newName"
+                        JQL         = "newJQL"
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -263,8 +263,8 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
-                        Favorite = $true
+                        Name        = "newName"
+                        Favorite    = $true
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -275,9 +275,9 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
+                        Name        = "newName"
                         Description = "newDescription"
-                        JQL = "newJQL"
+                        JQL         = "newJQL"
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -288,9 +288,9 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
+                        Name        = "newName"
                         Description = "newDescription"
-                        Favorite = $true
+                        Favorite    = $true
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw
@@ -301,10 +301,10 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
                 {
                     $parameter = @{
                         InputObject = Get-JiraFilter "12345"
-                        Name = "newName"
+                        Name        = "newName"
                         Description = "newDescription"
-                        JQL = "newJQL"
-                        Favorite = $true
+                        JQL         = "newJQL"
+                        Favorite    = $true
                     }
                     Set-JiraFilter @parameter
                 } | Should Not Throw

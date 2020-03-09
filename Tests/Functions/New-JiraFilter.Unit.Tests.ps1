@@ -1,5 +1,5 @@
 #requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.4.0" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
 
 Describe 'New-JiraFilter' -Tag 'Unit' {
 
@@ -97,8 +97,8 @@ Describe 'New-JiraFilter' -Tag 'Unit' {
             It "-Name and -JQL" {
                 {
                     $parameter = @{
-                        Name        = "newName"
-                        JQL         = "newJQL"
+                        Name = "newName"
+                        JQL  = "newJQL"
                     }
                     New-JiraFilter @parameter
                 } | Should Not Throw

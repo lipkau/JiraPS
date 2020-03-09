@@ -1,5 +1,5 @@
 #requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.4.0" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
 
 Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
 
@@ -25,8 +25,8 @@ Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
         $filterPermission2 = New-Object -TypeName PSCustomObject -Property @{ Id = 2222 }
         $filterPermission2.Id = 2222
         $fullFilter = New-Object -TypeName PSCustomObject -Property @{
-            Id = 12345
-            RestUrl = "$jiraServer/rest/api/2/filter/12345"
+            Id                = 12345
+            RestUrl           = "$jiraServer/rest/api/2/filter/12345"
             FilterPermissions = @(
                 $filterPermission1
                 $filterPermission2
@@ -34,7 +34,7 @@ Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
         }
         $fullFilter.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
         $basicFilter = New-Object -TypeName PSCustomObject -Property @{
-            Id = 23456
+            Id      = 23456
             RestUrl = "$jiraServer/rest/api/2/filter/23456"
         }
         $basicFilter.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')

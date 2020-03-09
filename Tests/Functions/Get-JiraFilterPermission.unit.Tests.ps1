@@ -1,5 +1,5 @@
 #requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.4.0" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
 
 Describe 'Get-JiraFilterPermission' -Tag 'Unit' {
 
@@ -37,13 +37,13 @@ Describe 'Get-JiraFilterPermission' -Tag 'Unit' {
 
         Mock Get-JiraFilter -ModuleName JiraPS {
             foreach ($_id in $Id) {
-            $basicFilter = New-Object -TypeName PSCustomObject -Property @{
-                Id = $Id
-                RestUrl = "$jiraServer/rest/api/2/filter/$Id"
+                $basicFilter = New-Object -TypeName PSCustomObject -Property @{
+                    Id      = $Id
+                    RestUrl = "$jiraServer/rest/api/2/filter/$Id"
+                }
+                $basicFilter.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
+                $basicFilter
             }
-            $basicFilter.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
-            $basicFilter
-        }
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission"} {
