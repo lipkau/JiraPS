@@ -83,13 +83,13 @@ Describe "Add-JiraIssueWorklog" -Tag 'Unit' {
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/worklog"} {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'Body'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
             ConvertFrom-Json $restResponse
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
 

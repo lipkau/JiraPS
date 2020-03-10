@@ -28,7 +28,7 @@ Describe "New-JiraIssue" -Tag 'Unit' {
         # If we don't override this in a context or test, we don't want it to
         # actually try to query a JIRA instance
         Mock Invoke-JiraMethod {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             @{ Key = "TEST-01" }
         }
 

@@ -65,7 +65,7 @@ Describe "Remove-JiraGroupMember" -Tag 'Unit' {
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         }
         #endregion Mocks
 

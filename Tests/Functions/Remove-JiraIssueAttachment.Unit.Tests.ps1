@@ -68,15 +68,15 @@ Describe "Remove-JiraIssueAttachment" -Tag 'Unit' {
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' -and $URI -eq "$jiraServer/rest/api/latest/attachment/$attachmentId1" } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         }
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' -and $URI -eq "$jiraServer/rest/api/latest/attachment/$attachmentId2" } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
         #endregion Mock

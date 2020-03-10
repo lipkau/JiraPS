@@ -43,16 +43,16 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345" } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         }
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345/assignee" } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         }
 
         # If we don't override this in a context or test, we don't want it to
         # actually try to query a JIRA instance
         Mock Invoke-JiraMethod {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
 

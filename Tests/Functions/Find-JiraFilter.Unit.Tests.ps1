@@ -64,7 +64,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
         }
 
         Mock Get-JiraProject -ModuleName JiraPS {
-            ShowMockInfo 'Get-JiraProject' 'Project'
+            ShowMockInfo 'Get-JiraProject' @{ Project = $Project }
             [PSCustomObject]@{
                 Id  = '1'
                 Key = 'Test'
@@ -72,7 +72,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
         }
 
         Mock Get-JiraUser -ModuleName JiraPS {
-            ShowMockInfo 'Get-JiraUser' 'User'
+            ShowMockInfo 'Get-JiraUser' @{ User = $User }
             $mockOwner
         }
 
@@ -80,12 +80,12 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
             $Method -eq 'Get' -and
             $URI -like "$jiraServer/rest/api/*/filter/search*"
         } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             ConvertFrom-Json $response
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw 'Unidentified call to Invoke-JiraMethod'
         }
         #endregion Mocks

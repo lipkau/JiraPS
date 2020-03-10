@@ -60,7 +60,7 @@ Describe "Add-JiraGroupMember" -Tag 'Unit' {
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'Body'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
             return $true
         }
 

@@ -38,15 +38,15 @@ Describe "Get-JiraIssueLink" -Tag 'Unit' {
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/2/issueLink/1234"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/2/issueLink/1234" } {
             ConvertFrom-Json $resultsJson
         }
 
-        Mock Get-JiraIssue -ModuleName JiraPS -ParameterFilter {$Key -eq "TEST-01"} {
+        Mock Get-JiraIssue -ModuleName JiraPS -ParameterFilter { $Key -eq "TEST-01" } {
             # We don't care about the content of any field except for the id
             $obj = [PSCustomObject]@{
                 "id"          = $issueLinkId
@@ -82,7 +82,7 @@ Describe "Get-JiraIssueLink" -Tag 'Unit' {
         }
 
         It 'Fails if input from the pipeline is of the wrong type' {
-            { [PSCustomObject]@{id = $issueLinkId} | Get-JiraIssueLink } | Should Throw
+            { [PSCustomObject]@{id = $issueLinkId } | Get-JiraIssueLink } | Should Throw
         }
     }
 }

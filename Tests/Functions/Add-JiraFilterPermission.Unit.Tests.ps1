@@ -133,12 +133,12 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission" } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'Body'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
             ConvertFrom-Json $permissionJSON
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
         #endregion Mocks

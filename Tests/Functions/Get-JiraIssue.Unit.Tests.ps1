@@ -63,7 +63,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             $Method -eq 'Get' -and
             $URI -like "$jiraServer/rest/api/*/issue/TEST-001*"
         } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             ConvertFrom-Json $response
         }
 
@@ -72,7 +72,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             $URI -like "$jiraServer/rest/api/*/search" -and
             $GetParameter["jql"] -eq $jqlEscaped
         } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             ConvertFrom-Json $response
         }
 
@@ -80,12 +80,12 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             $Method -eq 'Get' -and
             $URI -like "$jiraServer/rest/api/*/filter/*"
         } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             ConvertFrom-Json $response
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
         #endregion Mocks

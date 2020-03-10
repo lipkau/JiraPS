@@ -73,7 +73,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
             Mock -CommandName "ConvertTo-$type" -ModuleName $env:BHProjectName { }
         }
         Mock Invoke-WebRequest -ModuleName $env:BHProjectName {
-            ShowMockInfo 'Invoke-WebRequest' -Params 'Uri', 'Method', 'Body', 'Headers', 'ContentType', 'SessionVariable', 'WebSession'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Headers = $Headers; ContentType = $ContentType; SessionVariable = $SessionVariable; WebSession = $WebSession }
             $InvokeWebRequestSplat = @{
                 Uri             = $Uri
                 Method          = $Method
@@ -513,7 +513,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
 
         Describe "Paged restuls" {
             Mock Invoke-WebRequest -ModuleName $env:BHProjectName {
-                ShowMockInfo 'Invoke-WebRequest' -Params 'Uri', 'Method', 'Body'
+                ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
 
                 $response = ""
                 if ($Uri -match "startAt\=(\d+)") {

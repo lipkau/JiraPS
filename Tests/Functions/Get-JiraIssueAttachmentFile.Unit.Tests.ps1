@@ -77,12 +77,12 @@ Describe "Get-JiraIssueAttachmentFile" -Tag 'Unit' {
             $Method -eq 'Get' -and
             $URI -like "$jiraServer/secure/attachment/*"
         } {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'OutFile'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; OutFile = $OutFile }
         }
 
         # Generic catch-all. This will throw an exception if we forgot to mock something.
         Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
+            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             throw "Unidentified call to Invoke-JiraMethod"
         }
 

@@ -50,20 +50,20 @@ Describe "Find-JiraUser" -Tag 'Unit' {
     # Responds for ?query=
     # -- This is how Jira Cloud works
     Mock Invoke-JiraMethod -ModuleName $env:BHProjectName -ParameterFilter { $Uri -like "*/rest/api/*/user/search?query=*" } {
-        ShowMockInfo 'Invoke-JiraMethod' @{Method = $Method; Uri = $Uri }
+        ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         ConvertFrom-Json -InputObject "[{`"accountId`":`"000000:00000000-0000-0000-0000-0000000000`", `"EmailAddress`": `"user@example.com`", `"displayName`":`"Jon Doe`"}]"
     }
 
     # Responds to ?username=
     # -- This is how Jira Server works
     Mock Invoke-JiraMethod -ModuleName $env:BHProjectName -ParameterFilter { $Uri -like "*/rest/api/*/user/search?username=*" } {
-        ShowMockInfo 'Invoke-JiraMethod' @{Method = $Method; Uri = $Uri }
+        ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         ConvertFrom-Json -InputObject "[{`"key`":`"jon.doe`", `"EmailAddress`": `"user@example.com`", `"displayName`":`"Jon Doe`"}]"
     }
 
     # Generic catch-all. This will throw an exception if we forgot to mock something.
     Mock Invoke-JiraMethod -ModuleName $env:BHProjectName {
-        ShowMockInfo 'Invoke-JiraMethod' @{Method = $Method; Uri = $Uri }
+        ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         throw "Unidentified call to Invoke-JiraMethod"
     }
     #endregion Mocking
