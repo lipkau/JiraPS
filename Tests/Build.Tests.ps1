@@ -8,7 +8,7 @@ Describe "Validation of build environment" -Tag Unit {
         Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -force
+        Import-Module $env:BHManifestToTest -Force
     }
     AfterAll {
         Invoke-TestCleanup

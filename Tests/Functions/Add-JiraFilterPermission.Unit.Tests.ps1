@@ -4,10 +4,10 @@
 Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -force
+        Import-Module $env:BHManifestToTest -Force
     }
     AfterAll {
         Invoke-TestCleanup
@@ -124,12 +124,12 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
         Mock Get-JiraFilter -ModuleName JiraPS {
             foreach ($_id in $Id) {
                 $object = New-Object -TypeName PSCustomObject -Property @{
-                id = $_id
-                RestUrl = "$jiraServer/rest/api/latest/filter/$_id"
+                    id      = $_id
+                    RestUrl = "$jiraServer/rest/api/latest/filter/$_id"
+                }
+                $object.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
+                $object
             }
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
-            $object
-        }
         }
 
         Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission"} {
@@ -210,13 +210,13 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
             }
 
             It "allows for the filter's Id to be passed over the pipeline" {
-                { 1,2 | Add-JiraFilterPermission -Type "Global" } | Should -Not -Throw
+                { 1, 2 | Add-JiraFilterPermission -Type "Global" } | Should -Not -Throw
 
                 Assert-MockCalled -CommandName Get-JiraFilter -ModuleName JiraPS -Exactly -Times 2 -Scope It
             }
 
             It "can process mutiple FilterIds" {
-                { Add-JiraFilterPermission -Id 1,2,3,4,5 -Type "Global" } | Should -Not -Throw
+                { Add-JiraFilterPermission -Id 1, 2, 3, 4, 5 -Type "Global" } | Should -Not -Throw
 
                 Assert-MockCalled -CommandName Get-JiraFilter -ModuleName JiraPS -Exactly -Times 1 -Scope It
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 5 -Scope It

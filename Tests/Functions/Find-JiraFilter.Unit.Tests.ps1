@@ -4,10 +4,10 @@
 Describe 'Find-JiraFilter' -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -force
+        Import-Module $env:BHManifestToTest -Force
     }
     AfterAll {
         Invoke-TestCleanup
@@ -21,7 +21,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
 
         $mockOwner = [PSCustomObject]@{
             AccountId = 'c62dde3418235be1c8424950'
-            Name = 'TUser1'
+            Name      = 'TUser1'
         }
         $group = 'groupA'
         $groupEscaped = ConvertTo-URLEncoded $group
@@ -66,7 +66,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
         Mock Get-JiraProject -ModuleName JiraPS {
             ShowMockInfo 'Get-JiraProject' 'Project'
             [PSCustomObject]@{
-                Id = '1'
+                Id  = '1'
                 Key = 'Test'
             }
         }
@@ -251,7 +251,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
                 $searchObject = [PSCustomObject]@{
                     AccountId = $mockowner.AccountId
                     GroupName = $group
-                    Project = 'Test'
+                    Project   = 'Test'
                 }
 
                 # Should call Find-JiraFilter using the -Key parameter, so our URL should reflect the key we provided

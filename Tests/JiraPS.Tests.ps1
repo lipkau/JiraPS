@@ -7,7 +7,7 @@ Describe "General project validation" -Tag Unit {
         Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -force
+        Import-Module $env:BHManifestToTest -Force
     }
     AfterAll {
         Invoke-TestCleanup
@@ -18,11 +18,11 @@ Describe "General project validation" -Tag Unit {
     }
 
     It "module '$env:BHProjectName' can import cleanly" {
-        { Import-Module $env:BHManifestToTest } | Should Not Throw
+        { Import-Module $env:BHManifestToTest -Force } | Should Not Throw
     }
 
     It "module '$env:BHProjectName' exports functions" {
-        Import-Module $env:BHManifestToTest
+        Import-Module $env:BHManifestToTest -Force
 
         (Get-Command -Module $env:BHProjectName | Measure-Object).Count | Should -BeGreaterThan 0
     }
@@ -60,7 +60,7 @@ Describe "General project validation" -Tag Unit {
     # It "module is imported with custom prefix" {
     #     $prefix = "Wiki"
 
-    #     Import-Module $env:BHManifestToTest -Prefix $prefix -Force -ErrorAction Stop
+    #     Import-Module $env:BHManifestToTest -Force -Prefix $prefix -Force -ErrorAction Stop
     #     (Get-Command -Module $env:BHProjectName).Name | ForEach-Object {
     #         $_ | Should -Match "\-$prefix"
     #     }

@@ -4,10 +4,10 @@
 Describe "Set-JiraIssue" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -force
+        Import-Module $env:BHManifestToTest -Force
     }
     AfterAll {
         Invoke-TestCleanup
@@ -59,18 +59,52 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
         Context "Sanity checking" {
             $command = Get-Command -Name Set-JiraIssue
 
-            defParam $command 'Issue'
-            defParam $command 'Summary'
-            defParam $command 'Description'
-            defParam $command 'Assignee'
-            defParam $command 'Label'
-            defParam $command 'AddComment'
-            defParam $command 'Fields'
-            defParam $command 'Credential'
-            defParam $command 'PassThru'
+            It "has a parameter 'Issue' of type [Object[]]" {
+                $command | Should -HaveParameter "Issue" -Type [Object[]]
+            }
 
-            It "Supports the Key alias for the Issue parameter" {
-                $command.Parameters.Item('Issue').Aliases | Where-Object -FilterScript {$_ -eq 'Key'} | Should Not BeNullOrEmpty
+            It "has an alias 'Key' for parameter 'Issue" {
+                $command | Should -HaveParameter "Issue" -Alias "Key"
+            }
+
+            It "has a parameter 'Summary' of type [String]" {
+                $command | Should -HaveParameter "Summary" -Type [String]
+            }
+
+            It "has a parameter 'Description' of type [String]" {
+                $command | Should -HaveParameter "Description" -Type [String]
+            }
+
+            It "has a parameter 'FixVersion' of type [String[]]" {
+                $command | Should -HaveParameter "FixVersion" -Type [String[]]
+            }
+
+            defParam $command 'Assignee'
+            It "has a parameter 'Assignee' of type [AtlassianPS.JiraPS.User]" {
+                $command | Should -HaveParameter "Assignee" -Type [AtlassianPS.JiraPS.User]
+            }
+
+            defParam $command 'Label'
+            It "has a parameter 'Label' of type [Object[]]" {
+                $command | Should -HaveParameter "Label" -Type [Object[]]
+            }
+
+            defParam $command 'AddComment'
+            It "has a parameter 'AddComment' of type [String]" {
+                $command | Should -HaveParameter "AddComment" -Type [String]
+            }
+
+            defParam $command 'Fields'
+            It "has a parameter 'Fields' of type [PSCustomObject]" {
+                $command | Should -HaveParameter "Fields" -Type [PSCustomObject]
+            }
+
+            It "has a parameter 'Credential' of type [PSCredential]" {
+                $command | Should -HaveParameter "Credential" -Type [PSCredential]
+            }
+
+            It "has a parameter 'PassThru' of type [Switch]" {
+                $command | Should -HaveParameter "PassThru" -Type [Switch]
             }
         }
 

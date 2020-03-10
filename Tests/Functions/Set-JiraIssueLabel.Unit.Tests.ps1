@@ -4,10 +4,10 @@
 Describe "Set-JiraIssueLabel" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -force
+        Import-Module $env:BHManifestToTest -Force
     }
     AfterAll {
         Invoke-TestCleanup
@@ -48,17 +48,45 @@ Describe "Set-JiraIssueLabel" -Tag 'Unit' {
         Context "Sanity checking" {
             $command = Get-Command -Name Set-JiraIssueLabel
 
-            defParam $command 'Issue'
-            defParam $command 'Set'
-            defParam $command 'Add'
-            defParam $command 'Remove'
-            defParam $command 'Clear'
-            defParam $command 'Credential'
-            defParam $command 'PassThru'
+            It "has a parameter 'Issue' of type [Object[]]" {
+                $command | Should -HaveParameter "Issue" -Type [Object[]]
+            }
 
-            defAlias $command 'Key' 'Issue'
-            defAlias $command 'Label' 'Set'
-            defAlias $command 'Replace' 'Set'
+            It "has an alias 'Key' for parameter 'Issue" {
+                $command | Should -HaveParameter "Issue" -Alias "Key"
+            }
+
+            It "has a parameter 'Set' of type [String[]]" {
+                $command | Should -HaveParameter "Set" -Type [String[]]
+            }
+
+            It "has an alias 'Replace' for parameter 'Set" {
+                $command | Should -HaveParameter "Set" -Alias "Replace"
+            }
+
+            It "has an alias 'Label' for parameter 'Set" {
+                $command | Should -HaveParameter "Set" -Alias "Label"
+            }
+
+            It "has a parameter 'Add' of type [String[]]" {
+                $command | Should -HaveParameter "Add" -Type [String[]]
+            }
+
+            It "has a parameter 'Remove' of type [String[]]" {
+                $command | Should -HaveParameter "Remove" -Type [String[]]
+            }
+
+            It "has a parameter 'Clear' of type [Switch]" {
+                $command | Should -HaveParameter "Clear" -Type [Switch]
+            }
+
+            It "has a parameter 'Credential' of type [PSCredential]" {
+                $command | Should -HaveParameter "Credential" -Type [PSCredential]
+            }
+
+            It "has a parameter 'PassThru' of type [Switch]" {
+                $command | Should -HaveParameter "PassThru" -Type [Switch]
+            }
         }
 
         Context "Behavior testing" {
