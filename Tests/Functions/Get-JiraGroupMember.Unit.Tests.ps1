@@ -59,7 +59,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraGroupMember
 
             defParam $command 'Group'
@@ -69,7 +69,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Obtains members about a provided group in JIRA" {
                 { Get-JiraGroupMember -Group testgroup } | Should Not Throw
@@ -125,7 +125,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Accepts a group name for the -Group parameter" {
                 { Get-JiraGroupMember -Group testgroup } | Should Not Throw
 

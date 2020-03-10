@@ -17,12 +17,12 @@ Describe "ConvertFrom-URLEncoded" -Tag 'Unit' {
 
         . "$PSScriptRoot/../Shared.ps1"
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name ConvertFrom-URLEncoded
 
             defParam $command 'InputString'
         }
-        Context "Handling of Inputs" {
+        Describe "Handling of Inputs" {
             It "does not not allow a null or empty input" {
                 { ConvertFrom-URLEncoded -InputString $null } | Should Throw
                 { ConvertFrom-URLEncoded -InputString "" } | Should Throw
@@ -35,7 +35,7 @@ Describe "ConvertFrom-URLEncoded" -Tag 'Unit' {
                 { "lorem", "ipsum" | ConvertFrom-URLEncoded } | Should Not Throw
             }
         }
-        Context "Handling of Outputs" {
+        Describe "Handling of Outputs" {
             It "returns as many objects as inputs where provided" {
                 $r1 = ConvertFrom-URLEncoded -InputString "lorem"
                 $r2 = "lorem", "ipsum" | ConvertFrom-URLEncoded

@@ -42,7 +42,7 @@ Describe "Help tests" -Tag Documentation {
         # The module-qualified command fails on Microsoft.PowerShell.Archive cmdlets
         $help = Get-Help $command.Name -ErrorAction Stop
 
-        Context "Function $commandName's Help" {
+        Describe "Function $commandName's Help" {
 
             It "is described in a markdown file" {
                 $markdownFile | Should -Not -BeNullOrEmpty
@@ -173,7 +173,7 @@ Describe "Help tests" -Tag Documentation {
 
     #region Classes
     <# foreach ($class in $classes) {
-        Context "Classes $($class.BaseName) Help" {
+        Describe "Classes $($class.BaseName) Help" {
 
             It "is described in a markdown file" {
                 $class.FullName | Should -Not -BeNullOrEmpty
@@ -195,7 +195,7 @@ Describe "Help tests" -Tag Documentation {
     }
 
 
-    Context "Missing classes" {
+    Describe "Missing classes" {
         It "has a documentation file for every class" {
             foreach ($class in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsClass)) {
                 $classes.BaseName | Should -Contain $class.FullName
@@ -206,7 +206,7 @@ Describe "Help tests" -Tag Documentation {
 
     #region Enumerations
     <# foreach ($enum in $enums) {
-        Context "Enumeration $($enum.BaseName) Help" {
+        Describe "Enumeration $($enum.BaseName) Help" {
 
             It "is described in a markdown file" {
                 $enum.FullName | Should -Not -BeNullOrEmpty
@@ -227,7 +227,7 @@ Describe "Help tests" -Tag Documentation {
         }
     }
 
-    Context "Missing enumerations" {
+    Describe "Missing enumerations" {
         It "has a documentation file for every enumeration" {
             foreach ($enum in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsEnum)) {
                 $enums.BaseName | Should -Contain $enum.FullName

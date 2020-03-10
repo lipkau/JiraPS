@@ -28,7 +28,7 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
             }
         }
 
-        Mock Set-JiraIssueLabel {}
+        Mock Set-JiraIssueLabel { }
 
         Mock Get-JiraIssue {
             $object = [PSCustomObject] @{
@@ -42,10 +42,10 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
             Get-JiraIssue -Key $Issue
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
         }
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345/assignee"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345/assignee" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
         }
 
@@ -56,7 +56,7 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Set-JiraIssue
 
             It "has a parameter 'Issue' of type [Object[]]" {
@@ -108,7 +108,7 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
             }
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Modifies the summary of an issue if the -Summary parameter is passed" {
                 { Set-JiraIssue -Issue TEST-001 -Summary 'New summary' } | Should Not Throw
@@ -166,7 +166,7 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
                         'ID'   = $Field
                     }
                 }
-                { Set-JiraIssue -Issue TEST-001 -Fields @{'customfield_12345' = 'foo'; 'customfield_67890' = 'bar'; 'customfield_111222' = @(@{'value' = 'foobar'})} } | Should Not Throw
+                { Set-JiraIssue -Issue TEST-001 -Fields @{'customfield_12345' = 'foo'; 'customfield_67890' = 'bar'; 'customfield_111222' = @(@{'value' = 'foobar' }) } } | Should Not Throw
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/issue/12345" -and $Body -like '*customfield_12345*set*foo*' }
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/issue/12345" -and $Body -like '*customfield_67890*set*bar*' }
                 Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/issue/12345" -and $Body -like '*customfield_111222*set*foobar*' }
@@ -174,7 +174,7 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
 
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Accepts an issue key for the -Issue parameter" {
                 { Set-JiraIssue -Issue TEST-001 -Summary 'Test summary - using issue key' } | Should Not Throw
                 Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
@@ -197,7 +197,7 @@ Describe "Set-JiraIssue" -Tag 'Unit' {
             }
 
             It "Throws an exception if an invalid issue is provided" {
-                Mock Get-JiraIssue {}
+                Mock Get-JiraIssue { }
                 # We're cheating a bit here and forcing Write-Error to be a
                 # terminating error.
                 { Set-JiraIssue -Key FAKE -Summary 'Test' -ErrorAction Stop } | Should Throw

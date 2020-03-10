@@ -28,7 +28,7 @@ Describe "ConvertFrom-Json" -Tag 'Unit' {
         defProp $sampleObject 'Name' 'Issue Type'
         defProp $sampleObject 'Custom' $false
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             It "Does not crash on a null or empty input" {
                 { ConvertFrom-Json -InputObject '' } | Should Not Throw
             }

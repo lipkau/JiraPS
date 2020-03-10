@@ -20,7 +20,7 @@ InModuleScope JiraPS {
         $Pass = ConvertTo-SecureString -AsPlainText -Force -String $env:JiraPass
         $Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ($env:JiraUser, $Pass)
 
-        Context 'Storing Server Data' {
+        Describe "Storing Server Data" {
             # ACT
             Set-JiraConfigServer $env:JiraURI
 
@@ -30,7 +30,7 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Basic Authentication' {
+        Describe "Basic Authentication" {
             # ACT
             $myUser = Get-JiraUser -UserName $env:JiraUser -Credential $cred
 
@@ -41,7 +41,7 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Session Authentication' {
+        Describe "Session Authentication" {
             # ACT
             $null = New-JiraSession -Credential $cred
             $myUser = Get-JiraUser -UserName $env:JiraUser
@@ -67,7 +67,7 @@ InModuleScope JiraPS {
         $versionName2 = "TESTv2"
         $versionName3 = "TESTv3"
 
-        Context 'New-JiraVersion' {
+        Describe "New-JiraVersion" {
             # ARRANGE
             $versionObject = [PSCustomObject]@{
                 Name        = $versionName1
@@ -108,7 +108,7 @@ InModuleScope JiraPS {
             defProp $result3 'Name' $versionName3
         }
 
-        Context 'Get-JiraVersion' {
+        Describe "Get-JiraVersion" {
             # ARRANGE
             $versionObject = [PSCustomObject]@{
                 Name = $versionName1
@@ -149,7 +149,7 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Set-JiraVersion' {
+        Describe "Set-JiraVersion" {
             # ARRANGE
             $now = (Get-Date)
             $oldVersion1 = Get-JiraVersion -Project $projectKey -Name $versionName1
@@ -185,7 +185,7 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Remove-JiraVersion' {
+        Describe "Remove-JiraVersion" {
             # ARRANGE
             $versionName1 = "TESTv1.1"
             $versionObject = Get-JiraVersion -Project $projectKey -Name $versionName2
@@ -203,7 +203,7 @@ InModuleScope JiraPS {
 
     <# Describe 'Handling of Users and Groups' -Tag 'Integration' {
 
-        Context 'New-JiraGroup' {
+        Describe "New-JiraGroup" {
             # ARRANGE
             $groupName = "TGroup1"
             $collectionOfGroups = @('TGroup2', 'TGroup3')
@@ -219,7 +219,7 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Get-JiraGroup' {
+        Describe "Get-JiraGroup" {
             # ARRANGE
             $groupName = "TGroup1"
             $collectionOfGroups = @('TGroup2', 'TGroup3')
@@ -247,7 +247,7 @@ InModuleScope JiraPS {
             hasNotProp $groupObjs[1] 'Member'
         }
 
-        Context 'New-JiraUser' {
+        Describe "New-JiraUser" {
             # ARRANGE
             $user1 = @{
                 UserName     = "TUser1"
@@ -270,7 +270,7 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Get-JiraUser' {
+        Describe "Get-JiraUser" {
             # ARRANGE
             $user1 = @{
                 UserName     = "TUser1"
@@ -316,7 +316,7 @@ InModuleScope JiraPS {
             hasNotProp $userObjs[1] 'Group'
         }
 
-        Context 'Add-JiraGroupMember' {
+        Describe "Add-JiraGroupMember" {
             # ARRANGE
             $user1 = Get-JiraUser "TUser1" -ErrorAction Stop
             $userName2 = "TUser2"
@@ -357,13 +357,13 @@ InModuleScope JiraPS {
             }
         }
 
-        Context 'Get-JiraGroupMember' {
+        Describe "Get-JiraGroupMember" {
             # ARRANGE
             # ACT
             # ASSERT
         }
 
-        Context 'Remove-JiraGroupMember' {
+        Describe "Remove-JiraGroupMember" {
             # ARRANGE
             $user1 = Get-JiraUser "TUser1" -ErrorAction Stop
             $userName2 = "TUser2"
@@ -379,7 +379,7 @@ InModuleScope JiraPS {
             Get-JiraGroupMember -Group $groupName2 | Should BeNullOrEmpty
         }
 
-        Context 'Remove-JiraUser' {
+        Describe "Remove-JiraUser" {
             # ARRANGE
             $userName = "TUser1"
             $collectionOfUsers = @("TUser2", "TUser3")
@@ -393,7 +393,7 @@ InModuleScope JiraPS {
             Get-JiraUser $collectionOfUsers | Should BeNullOrEmpty
         }
 
-        Context 'Remove-JiraGroup' {
+        Describe "Remove-JiraGroup" {
             # ARRANGE
             $WarningPreference = "SilentlyContinue"
             $groupName = "TGroup1"

@@ -102,7 +102,7 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
 
         Mock Get-JiraProject -ModuleName JiraPS {
             $json = ConvertFrom-Json $JiraProjectData
-            $object = $json | Where-Object {$_.Key -in $Project}
+            $object = $json | Where-Object { $_.Key -in $Project }
             $object.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
             return $object
         }
@@ -144,7 +144,7 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraVersion
 
             defParam $command 'Project'
@@ -153,7 +153,7 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior checking" {
+        Describe "Behavior checking" {
 
             It "gets a Version using Id Parameter Set" {
                 $results = Get-JiraVersion -Id $versionID1
@@ -225,8 +225,8 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
             }
 
             It "gets a Version using the pipeline from another Version" {
-                $version1 = ConvertTo-JiraVersion ([PSCustomObject]@{Id = [int]($versionID2)})
-                $version2 = ConvertTo-JiraVersion ([PSCustomObject]@{Id = [int]($versionID2); project = "lorem"})
+                $version1 = ConvertTo-JiraVersion ([PSCustomObject]@{Id = [int]($versionID2) })
+                $version2 = ConvertTo-JiraVersion ([PSCustomObject]@{Id = [int]($versionID2); project = "lorem" })
 
                 $results1 = ($version1 | Get-JiraVersion)
                 $results2 = ($version2 | Get-JiraVersion)

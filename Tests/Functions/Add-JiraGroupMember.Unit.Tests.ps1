@@ -67,7 +67,7 @@ Describe "Add-JiraGroupMember" -Tag 'Unit' {
         #############
         # Tests
         #############
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
 
             It "Accepts a group name as a String to the -Group parameter" {
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername2 } | Should Not Throw
@@ -75,23 +75,23 @@ Describe "Add-JiraGroupMember" -Tag 'Unit' {
                 Assert-MockCalled -CommandName Get-JiraGroup -Exactly -Times 2 -Scope It
                 Assert-MockCalled -CommandName Get-JiraGroupMember -Exactly -Times 2 -Scope It
                 Assert-MockCalled -CommandName Get-JiraUser -Exactly -Times 2 -Scope It
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -match $testGroupName} -Exactly -Times 2 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter { $URI -match $testGroupName } -Exactly -Times 2 -Scope It
                 Assert-MockCalled -CommandName ConvertTo-JiraGroup -Exactly -Times 1 -Scope It
             }
 
             It "Accepts a JiraPS.Group object to the -Group parameter" {
                 $group = Get-JiraGroup -GroupName $testGroupName
                 { Add-JiraGroupMember -Group $group -User $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -match $testGroupName} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter { $URI -match $testGroupName } -Exactly -Times 1 -Scope It
             }
 
             It "Accepts pipeline input from Get-JiraGroup" {
                 { Get-JiraGroup -GroupName $testGroupName | Add-JiraGroupMember -User $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$URI -match $testGroupName} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter { $URI -match $testGroupName } -Exactly -Times 1 -Scope It
             }
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Tests to see if a provided user is currently a member of the provided JIRA group before attempting to add them" {
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername1 -ErrorAction Stop } | Should Throw
@@ -100,7 +100,7 @@ Describe "Add-JiraGroupMember" -Tag 'Unit' {
 
             It "Adds a user to a JIRA group if the user is not a member" {
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -match $testGroupName -and $Body -match $testUsername2} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter { $Method -eq 'POST' -and $URI -match $testGroupName -and $Body -match $testUsername2 } -Exactly -Times 1 -Scope It
             }
 
             It "Adds multiple users to a JIRA group if they are passed to the -User parameter" {
@@ -110,14 +110,14 @@ Describe "Add-JiraGroupMember" -Tag 'Unit' {
 
                 # Should use the REST method twice, since at present, you can only add one group member per API call
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername1, $testUsername2 } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$Method -eq 'Post' -and $URI -match $testGroupName} -Exactly -Times 2 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter { $Method -eq 'Post' -and $URI -match $testGroupName } -Exactly -Times 2 -Scope It
             }
         }
 
-        Context "Error checking" {
+        Describe "Error checking" {
             It "Gracefully handles cases where a provided user is already in the provided group" {
                 { Add-JiraGroupMember -Group $testGroupName -User $testUsername1, $testUsername2 -ErrorAction SilentlyContinue } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter {$Method -eq 'Post' -and $URI -match $testGroupName} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ParameterFilter { $Method -eq 'Post' -and $URI -match $testGroupName } -Exactly -Times 1 -Scope It
             }
         }
     }

@@ -39,7 +39,7 @@ Describe "New-JiraUser" -Tag 'Unit' {
             Write-Output $jiraServer
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/user"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/user" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json $testJson
         }
@@ -59,8 +59,8 @@ Describe "New-JiraUser" -Tag 'Unit' {
             $newResult | Should Not BeNullOrEmpty
         }
 
-        Context "Output checking" {
-            Mock ConvertTo-JiraUser {}
+        Describe "Output checking" {
+            Mock ConvertTo-JiraUser { }
             New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName
 
             It "Uses ConvertTo-JiraUser to beautify output" {

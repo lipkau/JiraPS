@@ -195,7 +195,7 @@ Describe "Get-JiraIssueEditMetadata" -Tag 'Unit' {
             $InputObject
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -like "*/rest/api/*/issue/$issueID/editmeta"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -like "*/rest/api/*/issue/$issueID/editmeta" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json $restResult
         }
@@ -205,14 +205,14 @@ Describe "Get-JiraIssueEditMetadata" -Tag 'Unit' {
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraIssueEditMetadata
 
             defParam $command 'Issue'
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Queries Jira for metadata information about editing an issue" {
                 { Get-JiraIssueEditMetadata -Issue $issueID } | Should Not Throw

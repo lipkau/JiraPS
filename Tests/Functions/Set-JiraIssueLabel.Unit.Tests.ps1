@@ -37,7 +37,7 @@ Describe "Set-JiraIssueLabel" -Tag 'Unit' {
             Get-JiraIssue -Key $Issue
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq "Put" -and $Uri -like "$jiraServer/rest/api/*/issue/12345" } {
         }
 
         Mock Invoke-JiraMethod {
@@ -45,7 +45,7 @@ Describe "Set-JiraIssueLabel" -Tag 'Unit' {
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Set-JiraIssueLabel
 
             It "has a parameter 'Issue' of type [Object[]]" {
@@ -89,7 +89,7 @@ Describe "Set-JiraIssueLabel" -Tag 'Unit' {
             }
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Replaces all issue labels if the Set parameter is supplied" {
                 { Set-JiraIssueLabel -Issue TEST-001 -Set 'testLabel1', 'testLabel2' } | Should Not Throw
                 # The String in the ParameterFilter is made from the keywords
@@ -120,7 +120,7 @@ Describe "Set-JiraIssueLabel" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Accepts an issue key for the -Issue parameter" {
                 { Set-JiraIssueLabel -Issue TEST-001 -Set 'testLabel1' } | Should Not Throw
                 Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It

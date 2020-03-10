@@ -49,7 +49,7 @@ Describe "Add-JiraIssueComment" -Tag 'Unit' {
             Get-JiraIssue -Key $Issue
         }
 
-        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/comment"} {
+        Mock Invoke-JiraMethod -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/comment" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json $restResponse
         }
@@ -82,8 +82,8 @@ Describe "Add-JiraIssueComment" -Tag 'Unit' {
             Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -Exactly -Times 1 -Scope It
         }
 
-        Context "Output checking" {
-            Mock ConvertTo-JiraComment {}
+        Describe "Output checking" {
+            Mock ConvertTo-JiraComment { }
             Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $issueKey | Out-Null
 
 

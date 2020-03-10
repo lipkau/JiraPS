@@ -58,7 +58,7 @@ Describe "Get-JiraIssueWatcher" -Tag 'Unit' {
         }
 
         # Obtaining watchers from an issue...this is IT-3676 in the test environment
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json -InputObject $restResult
         }
@@ -73,14 +73,14 @@ Describe "Get-JiraIssueWatcher" -Tag 'Unit' {
         # Tests
         #############
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraIssueWatcher
 
             defParam $command 'Issue'
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Obtains all Jira watchers from a Jira issue if the issue key is provided" {
                 $watchers = Get-JiraIssueWatcher -Issue $issueKey

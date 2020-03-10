@@ -85,7 +85,7 @@ Describe 'Remove-JiraFilter' -Tag 'Unit' {
             }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Delete' -and $URI -like "$jiraServer/rest/api/*/filter/*"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' -and $URI -like "$jiraServer/rest/api/*/filter/*" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json $responseFilter
         }
@@ -96,30 +96,30 @@ Describe 'Remove-JiraFilter' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraFilter
 
             defParam $command 'InputObject'
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             Get-JiraFilter -Id 12844
             It "deletes a filter based on one or more InputObjects" {
                 { Get-JiraFilter -Id 12844 | Remove-JiraFilter } | Should Not Throw
 
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {$Method -eq 'Delete' -and $URI -like '*/rest/api/*/filter/12844'}
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter { $Method -eq 'Delete' -and $URI -like '*/rest/api/*/filter/12844' }
             }
 
             It "deletes a filter based on one ore more filter ids" {
                 { Remove-JiraFilter -Id 12844 } | Should Not Throw
 
                 Assert-MockCalled -CommandName Get-JiraFilter -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {$Method -eq 'Delete' -and $URI -like '*/rest/api/*/filter/12844'}
+                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter { $Method -eq 'Delete' -and $URI -like '*/rest/api/*/filter/12844' }
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Accepts a filter object for the -InputObject parameter" {
                 { Remove-JiraFilter -InputObject (Get-JiraFilter "12345") } | Should Not Throw
 
@@ -168,7 +168,7 @@ Describe 'Remove-JiraFilter' -Tag 'Unit' {
 
             It "fails if something other than [JiraPS.Filter] is provided" {
                 { Get-Date | Remove-JiraFilter -ErrorAction Stop } | Should Throw
-                { Remove-JiraFilter "12345" -ErrorAction Stop} | Should Throw
+                { Remove-JiraFilter "12345" -ErrorAction Stop } | Should Throw
             }
         }
     }

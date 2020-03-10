@@ -39,7 +39,7 @@ Describe "Add-JiraIssueWatcher" -Tag 'Unit' {
             Get-JiraIssue -Key $Issue
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers" } {
             ShowMockInfo 'Invoke-JiraMethod' -Params 'Uri', 'Method'
         }
 
@@ -53,7 +53,7 @@ Describe "Add-JiraIssueWatcher" -Tag 'Unit' {
         # Tests
         #############
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Add-JiraIssueWatcher
 
             defParam $command 'Watcher'
@@ -61,7 +61,7 @@ Describe "Add-JiraIssueWatcher" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Adds a Watcher to an issue in JIRA" {
                 $WatcherResult = Add-JiraIssueWatcher -Watcher 'fred' -Issue $issueKey

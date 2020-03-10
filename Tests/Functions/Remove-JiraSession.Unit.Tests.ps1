@@ -21,13 +21,13 @@ Describe "Remove-JiraSession" -Tag 'Unit' {
     }
     #endregion Mocks
 
-    Context "Sanity checking" {
+    Describe "Sanity checking" {
         $command = Get-Command -Name Remove-JiraSession
 
         defParam $command 'Session'
     }
 
-    Context "Behavior testing" {
+    Describe "Behavior testing" {
         It "Closes a removes the JiraPS.Session data from module PrivateData" {
             (Get-Module JiraPS).PrivateData = @{ Session = $true }
             (Get-Module JiraPS).PrivateData.Session | Should -Not -BeNullOrEmpty

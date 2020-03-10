@@ -90,10 +90,10 @@ Describe "ConvertTo-JiraEditMetaField" -Tag 'Unit' {
 
         checkPsType $r[0] 'JiraPS.EditMetaField'
 
-        Context "Data validation" {
+        Describe "Data validation" {
             # Our sample JSON includes two fields: summary and priority.
-            $summary = ConvertTo-JiraEditMetaField $sampleObject | Where-Object -FilterScript {$_.Name -eq 'Summary'}
-            $priority = ConvertTo-JiraEditMetaField $sampleObject | Where-Object -FilterScript {$_.Name -eq 'Priority'}
+            $summary = ConvertTo-JiraEditMetaField $sampleObject | Where-Object -FilterScript { $_.Name -eq 'Summary' }
+            $priority = ConvertTo-JiraEditMetaField $sampleObject | Where-Object -FilterScript { $_.Name -eq 'Priority' }
 
             defProp $summary 'Id' 'summary'
             defProp $summary 'Name' 'Summary'

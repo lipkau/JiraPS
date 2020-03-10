@@ -85,7 +85,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
             }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/filter/*"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/filter/*" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'Body'
             ConvertFrom-Json $responseFilter
         }
@@ -96,7 +96,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Set-JiraFilter
 
             defParam $command 'InputObject'
@@ -109,7 +109,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
             defAlias $command 'Favourite' 'Favorite'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Invokes the Jira API to update a filter" {
                 {
                     $newData = @{
@@ -153,7 +153,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "accepts a filter object for the -InputObject parameter" {
                 { Set-JiraFilter -InputObject (Get-JiraFilter "12345") -Name "test" } | Should Not Throw
 
@@ -178,7 +178,7 @@ Describe 'Set-JiraFilter' -Tag 'Unit' {
 
             It "fails if something other than [JiraPS.Filter] is provided to InputObject" {
                 { "12345" | Set-JiraFilter -ErrorAction Stop } | Should Throw
-                { Set-JiraFilter "12345" -ErrorAction Stop} | Should Throw
+                { Set-JiraFilter "12345" -ErrorAction Stop } | Should Throw
             }
 
             It "accepts -InputObject" {

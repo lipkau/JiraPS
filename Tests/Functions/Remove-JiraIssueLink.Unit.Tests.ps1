@@ -46,7 +46,7 @@ Describe "Remove-JiraIssueLink" -Tag 'Unit' {
             return $obj
         }
 
-        Mock Get-JiraIssue -ModuleName JiraPS -ParameterFilter {$Key -eq "TEST-01"} {
+        Mock Get-JiraIssue -ModuleName JiraPS -ParameterFilter { $Key -eq "TEST-01" } {
             # We don't care about the content of any field except for the id of the issuelinks
             $issue = [PSCustomObject]@{
                 issueLinks = @( (Get-JiraIssueLink -Id 1234) )
@@ -55,7 +55,7 @@ Describe "Remove-JiraIssueLink" -Tag 'Unit' {
             return $issue
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Delete' -and $URI -like "$jiraServer/rest/api/*/issueLink/1234"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' -and $URI -like "$jiraServer/rest/api/*/issueLink/1234" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
         }
 
@@ -69,14 +69,14 @@ Describe "Remove-JiraIssueLink" -Tag 'Unit' {
         # Tests
         #############
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraIssueLink
 
             defParam $command 'IssueLink'
             defParam $command 'Credential'
         }
 
-        Context "Functionality" {
+        Describe "Functionality" {
 
             It "Accepts generic object with the correct properties" {
                 $issueLink = Get-JiraIssueLink -Id 1234
@@ -97,7 +97,7 @@ Describe "Remove-JiraIssueLink" -Tag 'Unit' {
             }
 
             It "Validates pipeline input" {
-                { @{id = 1} | Remove-JiraIssueLink -ErrorAction SilentlyContinue } | Should Throw
+                { @{id = 1 } | Remove-JiraIssueLink -ErrorAction SilentlyContinue } | Should Throw
             }
         }
     }

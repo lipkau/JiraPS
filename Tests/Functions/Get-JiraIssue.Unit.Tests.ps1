@@ -90,7 +90,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraIssue
 
             defParam $command 'Key'
@@ -104,7 +104,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Obtains information about a provided issue in JIRA" {
                 { Get-JiraIssue -Key TEST-001 } | Should -Not -Throw
@@ -248,7 +248,7 @@ Describe "Get-JiraGroupMember" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Accepts an issue key for the -Key parameter" {
                 { Get-JiraIssue -Key TEST-001 } | Should -Not -Throw
 

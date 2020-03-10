@@ -68,7 +68,7 @@ Describe "Find-JiraUser" -Tag 'Unit' {
     }
     #endregion Mocking
 
-    Context "Sanity checking" {
+    Describe "Sanity checking" {
         $command = Get-Command -Name Find-JiraUser
 
         It "has a parameter 'IncludeInactive' of type [Switch]" {
@@ -95,7 +95,7 @@ Describe "Find-JiraUser" -Tag 'Unit' {
             $command.OutputType.Name | Should -not -BeNullOrEmpty
         }
 
-        Context "ParameterSet: ByEmailAddress" {
+        Describe "ParameterSet: ByEmailAddress" {
             $parameterSetName = "ByEmailAddress"
             $parameterSet = $command.ParameterSets | Where-Object { $_.Name -eq $parameterSetName }
 
@@ -107,7 +107,7 @@ Describe "Find-JiraUser" -Tag 'Unit' {
             }
         }
 
-        Context "ParameterSet: ByUserName" {
+        Describe "ParameterSet: ByUserName" {
             $parameterSetName = "ByUserName"
             $parameterSet = $command.ParameterSets | Where-Object { $_.Name -eq $parameterSetName }
 
@@ -120,7 +120,7 @@ Describe "Find-JiraUser" -Tag 'Unit' {
         }
     }
 
-    Context "Behavior checking" {
+    Describe "Behavior checking" {
         It "finds a user by it's email address" {
             $getResult = Find-JiraUser -EmailAddress "jon.doe@example.com"
 

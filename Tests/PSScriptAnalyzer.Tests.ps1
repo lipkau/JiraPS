@@ -36,17 +36,17 @@ Describe "PSScriptAnalyzer Tests" -Tag Unit {
     foreach ($Script in $scripts) {
         $RelPath = $Script.FullName.Replace($env:BHProjectPath, '') -replace '^\\', ''
 
-        Context "$RelPath" {
+        Describe "$RelPath" {
 
             $Rules = $ScriptWarnings |
-                Where-Object {$_.ScriptPath -like $Script.FullName} |
-                Select-Object -ExpandProperty RuleName -Unique
+            Where-Object { $_.ScriptPath -like $Script.FullName } |
+            Select-Object -ExpandProperty RuleName -Unique
 
             foreach ($rule in $Rules) {
-                It "passes $rule" {
+                It "passes rule '$rule'" {
                     $BadLines = $ScriptWarnings |
-                        Where-Object {$_.ScriptPath -like $Script.FullName -and $_.RuleName -like $rule} |
-                        Select-Object -ExpandProperty Line
+                    Where-Object { $_.ScriptPath -like $Script.FullName -and $_.RuleName -like $rule } |
+                    Select-Object -ExpandProperty Line
                     $BadLines | Should -Be $null
                 }
             }
@@ -54,7 +54,7 @@ Describe "PSScriptAnalyzer Tests" -Tag Unit {
             $Exceptions = $null
             if ($ErrorVariable) {
                 $Exceptions = $ErrorVariable.Exception.Message |
-                    Where-Object {$_ -match [regex]::Escape($Script.FullName)}
+                Where-Object { $_ -match [regex]::Escape($Script.FullName) }
             }
 
             It "has no parse errors" {

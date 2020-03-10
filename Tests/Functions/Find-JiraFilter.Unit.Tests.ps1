@@ -90,7 +90,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context 'Sanity checking' {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Find-JiraFilter
 
             defParam $command 'Name'
@@ -103,7 +103,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context 'Behavior testing' {
+        Describe "Behavior testing" {
 
             It 'Finds a JIRA filter by Name' {
                 { Find-JiraFilter -Name 'Test Filter' } | Should -Not -Throw
@@ -228,7 +228,7 @@ Describe 'Find-JiraFilter' -Tag 'Unit' {
             }
         }
 
-        Context 'Input testing' {
+        Describe "Input testing" {
             It 'Accepts a project key for the -Project parameter' {
                 { Find-JiraFilter -Project 'Test' } | Should -Not -Throw
 

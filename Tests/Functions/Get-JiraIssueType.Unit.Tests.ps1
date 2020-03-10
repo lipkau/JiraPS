@@ -99,7 +99,7 @@ Describe "Get-JiraIssueType" -Tag 'Unit' {
             $inputObject
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $Uri -eq "$jiraServer/rest/api/latest/issuetype"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $Uri -eq "$jiraServer/rest/api/latest/issuetype" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json $restResult
         }
@@ -138,7 +138,7 @@ Describe "Get-JiraIssueType" -Tag 'Unit' {
             $oneResult.Name | Should Be 'Desktop Support'
         }
 
-        Context "Output Checking" {
+        Describe "Output Checking" {
 
             Get-JiraIssueType
 

@@ -16,7 +16,7 @@ Describe "General project validation" -Tag Unit {
     $module = Get-Module $env:BHProjectName
     $testFiles = Get-ChildItem $PSScriptRoot -Include "*.Tests.ps1" -Recurse
 
-    Context "Public functions" {
+    Describe "Public functions" {
         $publicFunctions = (Get-ChildItem "$env:BHModulePath/Public/*.ps1").BaseName
 
         foreach ($function in $publicFunctions) {
@@ -36,7 +36,7 @@ Describe "General project validation" -Tag Unit {
         }
     }
 
-    Context "Private functions" {
+    Describe "Private functions" {
         $privateFunctions = (Get-ChildItem "$env:BHModulePath/Private/*.ps1").BaseName
 
         foreach ($function in $privateFunctions) {
@@ -57,7 +57,7 @@ Describe "General project validation" -Tag Unit {
     }
 
     <#
-    Context "Classes" {
+    Describe "Classes" {
 
         foreach ($class in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsClass)) {
             It "has a test file for $class" {
@@ -67,7 +67,7 @@ Describe "General project validation" -Tag Unit {
         }
     }
 
-    Context "Enumeration" {
+    Describe "Enumeration" {
 
         foreach ($enum in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsEnum)) {
             It "has a test file for $enum" {
@@ -78,7 +78,7 @@ Describe "General project validation" -Tag Unit {
     }
 #>
 
-    Context "Project stucture" {
+    Describe "Project stucture" {
         $publicFunctions = (Get-Module -Name $env:BHProjectName).ExportedFunctions.Keys
 
         It "has all the public functions as a file in '$env:BHProjectName/Public'" {

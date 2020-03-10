@@ -101,10 +101,10 @@ Describe "ConvertTo-JiraCreateMetaField" -Tag 'Unit' {
 
         checkPsType $r[0] 'JiraPS.CreateMetaField'
 
-        Context "Data validation" {
+        Describe "Data validation" {
             # Our sample JSON includes two fields: summary and priority.
-            $summary = ConvertTo-JiraCreateMetaField $sampleObject | Where-Object -FilterScript {$_.Name -eq 'Summary'}
-            $priority = ConvertTo-JiraCreateMetaField $sampleObject | Where-Object -FilterScript {$_.Name -eq 'Priority'}
+            $summary = ConvertTo-JiraCreateMetaField $sampleObject | Where-Object -FilterScript { $_.Name -eq 'Summary' }
+            $priority = ConvertTo-JiraCreateMetaField $sampleObject | Where-Object -FilterScript { $_.Name -eq 'Priority' }
 
             defProp $summary 'Id' 'summary'
             defProp $summary 'Name' 'Summary'

@@ -72,7 +72,7 @@ Describe "Remove-JiraGroupMember" -Tag 'Unit' {
         #############
         # Tests
         #############
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraGroupMember
 
             defParam $command 'Group'
@@ -82,7 +82,7 @@ Describe "Remove-JiraGroupMember" -Tag 'Unit' {
             defParam $command 'Force'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Tests to see if a provided user is currently a member of the provided JIRA group before attempting to remove them" {
                 { Remove-JiraGroupMember -Group $testGroupName -User $testUsername1 -Force } | Should Not Throw
 
@@ -137,7 +137,7 @@ Describe "Remove-JiraGroupMember" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Accepts a group name as a String to the -Group parameter" {
                 { Remove-JiraGroupMember -Group $testGroupName -User $testUsername1 -Force } | Should Not Throw
 
@@ -180,7 +180,7 @@ Describe "Remove-JiraGroupMember" -Tag 'Unit' {
             }
 
             It "Accepts pipeline input from Get-JiraGroup" {
-                { Get-JiraGroup -GroupName $testGroupName | Remove-JiraGroupMember -User $testUsername1 -Force} | Should Not Throw
+                { Get-JiraGroup -GroupName $testGroupName | Remove-JiraGroupMember -User $testUsername1 -Force } | Should Not Throw
 
                 $assertMockCalledSplat = @{
                     CommandName     = 'Invoke-JiraMethod'

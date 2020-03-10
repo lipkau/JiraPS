@@ -17,7 +17,7 @@ Describe "Validation of example codes in the documentation" -Tag Documentation, 
 
     $functions = Get-Command -Module $env:BHProjectName | Get-Help
     foreach ($function in $functions) {
-        Context "Examples of $($function.Name)" {
+        Describe "Examples of $($function.Name)" {
 
 
         }

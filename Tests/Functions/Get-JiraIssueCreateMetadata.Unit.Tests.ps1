@@ -216,7 +216,7 @@ Describe "Get-JiraIssueCreateMetadata" -Tag 'Unit' {
             $InputObject
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -like "$jiraserver/rest/api/*/issue/createmeta?*"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -like "$jiraserver/rest/api/*/issue/createmeta?*" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             return $restResult
         }
@@ -226,7 +226,7 @@ Describe "Get-JiraIssueCreateMetadata" -Tag 'Unit' {
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraIssueCreateMetadata
 
             defParam $command 'Project'
@@ -234,7 +234,7 @@ Describe "Get-JiraIssueCreateMetadata" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Queries Jira for metadata information about creating an issue" {
                 { Get-JiraIssueCreateMetadata -Project 10003 -IssueType 2 } | Should Not Throw

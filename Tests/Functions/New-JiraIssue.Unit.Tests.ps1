@@ -29,11 +29,11 @@ Describe "New-JiraIssue" -Tag 'Unit' {
         # actually try to query a JIRA instance
         Mock Invoke-JiraMethod {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
-            @{ Key = "TEST-01"}
+            @{ Key = "TEST-01" }
         }
 
         Mock Get-JiraIssue {
-            [PSCustomObject] @{ Key = "TEST-01"}
+            [PSCustomObject] @{ Key = "TEST-01" }
         }
 
         Mock Get-JiraProject {
@@ -72,12 +72,12 @@ Describe "New-JiraIssue" -Tag 'Unit' {
 
         Mock Get-JiraIssueCreateMetadata {
             @(
-                @{Name = 'Project'; ID = 'Project'; Required = $true}
-                @{Name = 'IssueType'; ID = 'IssueType'; Required = $true}
-                @{Name = 'Priority'; ID = 'Priority'; Required = $true}
-                @{Name = 'Summary'; ID = 'Summary'; Required = $true}
-                @{Name = 'Description'; ID = 'Description'; Required = $true}
-                @{Name = 'Reporter'; ID = 'Reporter'; Required = $true}
+                @{Name = 'Project'; ID = 'Project'; Required = $true }
+                @{Name = 'IssueType'; ID = 'IssueType'; Required = $true }
+                @{Name = 'Priority'; ID = 'Priority'; Required = $true }
+                @{Name = 'Summary'; ID = 'Summary'; Required = $true }
+                @{Name = 'Description'; ID = 'Description'; Required = $true }
+                @{Name = 'Reporter'; ID = 'Reporter'; Required = $true }
             )
         }
 
@@ -92,7 +92,7 @@ Describe "New-JiraIssue" -Tag 'Unit' {
 
         $pipelineParams = New-Object -TypeName PSCustomObject -Property $newParams
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name New-JiraIssue
 
             defParam $command 'Project'
@@ -106,7 +106,7 @@ Describe "New-JiraIssue" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Creates an issue in JIRA" {
                 { New-JiraIssue @newParams } | Should Not Throw
                 # The String in the ParameterFilter is made from the keywords
@@ -123,23 +123,23 @@ Describe "New-JiraIssue" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "Checks to make sure all required fields are provided" {
                 # We'll create a custom field that's required, then see what happens when we don't provide it
                 Mock Get-JiraIssueCreateMetadata {
                     @(
-                        @{Name = 'Project'; ID = 'Project'; Required = $true}
-                        @{Name = 'IssueType'; ID = 'IssueType'; Required = $true}
-                        @{Name = 'Priority'; ID = 'Priority'; Required = $true}
-                        @{Name = 'Summary'; ID = 'Summary'; Required = $true}
-                        @{Name = 'Description'; ID = 'Description'; Required = $true}
-                        @{Name = 'Reporter'; ID = 'Reporter'; Required = $true}
-                        @{Name = 'CustomField'; ID = 'CustomField'; Required = $true}
+                        @{Name = 'Project'; ID = 'Project'; Required = $true }
+                        @{Name = 'IssueType'; ID = 'IssueType'; Required = $true }
+                        @{Name = 'Priority'; ID = 'Priority'; Required = $true }
+                        @{Name = 'Summary'; ID = 'Summary'; Required = $true }
+                        @{Name = 'Description'; ID = 'Description'; Required = $true }
+                        @{Name = 'Reporter'; ID = 'Reporter'; Required = $true }
+                        @{Name = 'CustomField'; ID = 'CustomField'; Required = $true }
                     )
                 }
 
                 { New-JiraIssue @newParams } | Should Throw
-                { New-JiraIssue @newParams -Fields @{'CustomField' = '.'} } | Should Not Throw
+                { New-JiraIssue @newParams -Fields @{'CustomField' = '.' } } | Should Not Throw
             }
         }
     }

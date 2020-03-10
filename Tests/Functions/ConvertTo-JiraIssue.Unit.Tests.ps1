@@ -880,7 +880,7 @@ Describe "ConvertTo-JiraIssue" -Tag 'Unit' {
 "@
         $sampleObject = ConvertFrom-Json -InputObject $sampleJson
 
-        Context "Basic behavior testing" {
+        Describe "Basic behavior testing" {
             $r = ConvertTo-JiraIssue -InputObject $sampleObject
 
             It "Creates a PSObject out of JSON input" {
@@ -899,7 +899,7 @@ Describe "ConvertTo-JiraIssue" -Tag 'Unit' {
             }
         }
 
-        Context "Output formatting" {
+        Describe "Output formatting" {
 
             # Other ConvertTo-Jira* functions call each other in some cases, so
             # we need to mock out a few others to avoid our Assert-MockCalled

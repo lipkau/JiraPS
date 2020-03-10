@@ -46,7 +46,7 @@ Describe 'Get-JiraFilterPermission' -Tag 'Unit' {
             }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             ConvertFrom-Json $sampleResponse
         }
@@ -57,7 +57,7 @@ Describe 'Get-JiraFilterPermission' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraFilterPermission
 
             defParam $command 'Filter'
@@ -65,7 +65,7 @@ Describe 'Get-JiraFilterPermission' -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Retrieves the permissions of a Filter by Object" {
                 { Get-JiraFilter -Id 23456 | Get-JiraFilterPermission } | Should -Not -Throw
 
@@ -85,7 +85,7 @@ Describe 'Get-JiraFilterPermission' -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "finds the filter by Id" {
                 { Get-JiraFilterPermission -Id 23456 } | Should -Not -Throw
 

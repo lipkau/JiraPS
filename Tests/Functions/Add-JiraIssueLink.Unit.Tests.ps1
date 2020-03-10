@@ -21,8 +21,8 @@ Describe 'Add-JiraIssueLink' -Tag 'Unit' {
 
         $issueKey = "TEST-01"
         $issueLink = [PSCustomObject]@{
-            outwardIssue = [PSCustomObject]@{key = "TEST-10"}
-            type         = [PSCustomObject]@{name = "Composition"}
+            outwardIssue = [PSCustomObject]@{key = "TEST-10" }
+            type         = [PSCustomObject]@{name = "Composition" }
         }
 
         Mock Get-JiraConfigServer -ModuleName JiraPS {
@@ -47,7 +47,7 @@ Describe 'Add-JiraIssueLink' -Tag 'Unit' {
             throw "Unidentified call to Invoke-JiraMethod"
         }
 
-        Mock Invoke-JiraMethod -ParameterFilter {$Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issueLink"} {
+        Mock Invoke-JiraMethod -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issueLink" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
             return $true
         }
@@ -56,7 +56,7 @@ Describe 'Add-JiraIssueLink' -Tag 'Unit' {
         # Tests
         #############
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Add-JiraIssueLink
 
             defParam $command 'Issue'
@@ -65,7 +65,7 @@ Describe 'Add-JiraIssueLink' -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Functionality" {
+        Describe "Functionality" {
 
             It 'Adds a new IssueLink' {
                 { Add-JiraIssueLink -Issue $issueKey -IssueLink $issueLink } | Should Not Throw

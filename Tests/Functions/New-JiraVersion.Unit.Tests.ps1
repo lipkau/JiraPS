@@ -55,7 +55,7 @@ Describe "New-JiraVersion" -Tag 'Unit' {
         Mock Get-JiraProject -ModuleName JiraPS {
             $Projects = ConvertFrom-Json $JiraProjectData
             $Projects | ForEach-Object { $_.PSObject.TypeNames.Insert(0, 'JiraPS.Project') }
-            $Projects | Where-Object {$_.Key -in $projectKey}
+            $Projects | Where-Object { $_.Key -in $projectKey }
         }
 
         Mock Get-JiraVersion -ModuleName JiraPS {
@@ -94,7 +94,7 @@ Describe "New-JiraVersion" -Tag 'Unit' {
         }
         #endregion Mock
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name New-JiraVersion
 
             defParam $command 'InputObject'
@@ -108,7 +108,7 @@ Describe "New-JiraVersion" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior checking" {
+        Describe "Behavior checking" {
             It "creates a Version from a Version Object" {
                 $version = Get-JiraVersion -Project $projectKey
                 $results = $version | New-JiraVersion -ErrorAction Stop

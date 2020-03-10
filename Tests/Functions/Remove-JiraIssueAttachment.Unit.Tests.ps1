@@ -82,7 +82,7 @@ Describe "Remove-JiraIssueAttachment" -Tag 'Unit' {
         #endregion Mock
 
         #region Tests
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraIssueAttachment
 
             defParam $command 'AttachmentId'
@@ -92,7 +92,7 @@ Describe "Remove-JiraIssueAttachment" -Tag 'Unit' {
             defParam $command 'Force'
         }
 
-        Context "Behavior checking" {
+        Describe "Behavior checking" {
             <#
             Remember to check for:
                 - each ParameterSet

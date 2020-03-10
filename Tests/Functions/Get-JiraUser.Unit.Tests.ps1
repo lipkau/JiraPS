@@ -72,7 +72,7 @@ Describe "Get-JiraUser" -Tag 'Unit' {
     }
     #endregion Mocking
 
-    Context "Sanity checking" {
+    Describe "Sanity checking" {
         $command = Get-Command -Name Get-JiraUser
 
         It "has a parameter 'Credential' of type [PSCredential]" {
@@ -87,7 +87,7 @@ Describe "Get-JiraUser" -Tag 'Unit' {
             $command.OutputType.Name | Should -not -BeNullOrEmpty
         }
 
-        Context "ParameterSet: Self" {
+        Describe "ParameterSet: Self" {
             $parameterSetName = "Self"
             $parameterSet = $command.ParameterSets | Where-Object { $_.name -eq $parameterSetName }
 
@@ -102,7 +102,7 @@ Describe "Get-JiraUser" -Tag 'Unit' {
             }
         }
 
-        Context "ParameterSet: ByUserName" {
+        Describe "ParameterSet: ByUserName" {
             It "has a mandatory parameter 'UserName'" {
                 $command | Should -HaveParameter "UserName" -Mandatory
             }
@@ -113,7 +113,7 @@ Describe "Get-JiraUser" -Tag 'Unit' {
         }
     }
 
-    Context "Behavior checking" {
+    Describe "Behavior checking" {
         It "gets the intormation about the logged in user" {
             $getResult = Get-JiraUser
 

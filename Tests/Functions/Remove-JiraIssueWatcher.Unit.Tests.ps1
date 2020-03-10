@@ -39,7 +39,7 @@ Describe "Remove-JiraIssueWatcher" -Tag 'Unit' {
             Get-JiraIssue -Key $Issue
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'DELETE' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers?username=fred"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'DELETE' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers?username=fred" } {
             ShowMockInfo 'Invoke-JiraMethod' -Params 'Uri', 'Method'
         }
 
@@ -53,7 +53,7 @@ Describe "Remove-JiraIssueWatcher" -Tag 'Unit' {
         # Tests
         #############
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraIssueWatcher
 
             defParam $command 'Watcher'
@@ -61,7 +61,7 @@ Describe "Remove-JiraIssueWatcher" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
 
             It "Removes a Watcher from an issue in JIRA" {
                 $WatcherResult = Remove-JiraIssueWatcher -Watcher 'fred' -Issue $issueKey

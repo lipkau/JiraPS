@@ -47,14 +47,14 @@ Describe "New-JiraSession" -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name New-JiraSession
 
             defParam $command 'Credential'
             defParam $command 'Headers'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "uses Basic Authentication to generate a session" {
                 { New-JiraSession -Credential $testCredential } | Should -Not -Throw
 
@@ -96,6 +96,6 @@ Describe "New-JiraSession" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" { }
+        Describe "Input testing" { }
     }
 }

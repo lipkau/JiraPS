@@ -44,7 +44,7 @@ Describe "Move-JiraVersion" -Tag 'Unit' {
         Mock Get-JiraProject -ModuleName JiraPS {
             $Projects = ConvertFrom-Json $JiraProjectData
             $Projects.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
-            $Projects | Where-Object {$_.Key -in $Project}
+            $Projects | Where-Object { $_.Key -in $Project }
         }
 
         Mock Get-JiraVersion -ModuleName JiraPS {
@@ -78,7 +78,7 @@ Describe "Move-JiraVersion" -Tag 'Unit' {
         }
         #endregion Mock
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Move-JiraVersion
 
             defParam $command 'Version'
@@ -87,7 +87,7 @@ Describe "Move-JiraVersion" -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "ByPosition behavior checking" {
+        Describe "ByPosition behavior checking" {
             It 'moves a Version using its ID and Last Position' {
                 { Move-JiraVersion -Version $versionID1 -Position Last -ErrorAction Stop } | Should Not Throw
                 Assert-MockCalled 'Get-JiraVersion' -Times 0 -Scope It -ModuleName JiraPS -Exactly
@@ -160,7 +160,7 @@ Describe "Move-JiraVersion" -Tag 'Unit' {
                 }
             }
         }
-        Context "ByAfter behavior checking" {
+        Describe "ByAfter behavior checking" {
             It 'moves a Version using its ID and other Version ID' {
                 $restUrl = (Get-JiraVersion -Id $versionID2).RestUrl
                 { Move-JiraVersion -Version $versionID1 -After $versionID2 -ErrorAction Stop } | Should Not Throw

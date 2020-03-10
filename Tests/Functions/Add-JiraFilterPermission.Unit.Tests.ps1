@@ -132,7 +132,7 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
             }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'Body'
             ConvertFrom-Json $permissionJSON
         }
@@ -143,7 +143,7 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Add-JiraFilterPermission
 
             defParam $command 'Filter'
@@ -153,7 +153,7 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Adds share permission to Filter Object" {
                 {
                     Add-JiraFilterPermission -Filter (Get-JiraFilter -Id 12844) -Type "Global"
@@ -181,7 +181,7 @@ Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "requires -Filter to be a JiraPS.Filter" {
                 { Add-JiraFilterPermission -Filter 1 -Type "Global" } | Should -Throw
                 { Add-JiraFilterPermission -Filter "lorem" -Type "Global" } | Should -Throw

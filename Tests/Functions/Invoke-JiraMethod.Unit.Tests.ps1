@@ -95,7 +95,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Invoke-JiraMethod
 
             defParam $command 'URI'
@@ -118,7 +118,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
             }
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "uses Invoke-WebMethod under the hood" {
                 Invoke-JiraMethod -URI "https://postman-echo.com/get?test=123" -ErrorAction Stop
 
@@ -148,8 +148,8 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
                 Invoke-JiraMethod -URI "https://postman-echo.com/get?test=123" -ErrorAction Stop
 
                 Assert-MockCalled -CommandName Set-TlsLevel -ModuleName $env:BHProjectName -Exactly -Times 2 -Scope It
-                Assert-MockCalled -CommandName Set-TlsLevel -ModuleName $env:BHProjectName -ParameterFilter {$Tls12 -eq $true} -Exactly -Times 1 -Scope It
-                Assert-MockCalled -CommandName Set-TlsLevel -ModuleName $env:BHProjectName -ParameterFilter {$Revert -eq $true} -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Set-TlsLevel -ModuleName $env:BHProjectName -ParameterFilter { $Tls12 -eq $true } -Exactly -Times 1 -Scope It
+                Assert-MockCalled -CommandName Set-TlsLevel -ModuleName $env:BHProjectName -ParameterFilter { $Revert -eq $true } -Exactly -Times 1 -Scope It
             }
 
             It "uses global default values for parameters" {
@@ -159,7 +159,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "parses a string to URi" {
                 [Uri]$Uri = "https://postman-echo.com/get?test=123"
                 $Uri | Should -BeOfType [Uri]
@@ -234,13 +234,13 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
                 Assert-MockCalled @assertMockCalledSplat
             }
 
-            It "overwrites module default headers with global PSDefaultParameterValues" {}
+            It "overwrites module default headers with global PSDefaultParameterValues" { }
 
-            It "overwrites global PSDefaultParameterValues with -Headers" {}
+            It "overwrites global PSDefaultParameterValues with -Headers" { }
 
-            It "overwrites module default headers with -Headers" {}
+            It "overwrites module default headers with -Headers" { }
 
-            It "overwrites get parameters in the URI with -GetParameter values" {}
+            It "overwrites get parameters in the URI with -GetParameter values" { }
 
             It "passes the -InFile to Invoke-WebRequest" {
                 $invokeJiraMethodSplat = @{
@@ -296,7 +296,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
                 $assertMockCalledSplat = @{
                     CommandName     = "Invoke-WebRequest"
                     ModuleName      = $env:BHProjectName
-                    ParameterFilter = {$SessionVariable -eq "newSessionVar"}
+                    ParameterFilter = { $SessionVariable -eq "newSessionVar" }
                     Exactly         = $true
                     Times           = 1
                     Scope           = 'It'
@@ -312,7 +312,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
                     $assertMockCalledSplat = @{
                         CommandName     = "Convert-Result"
                         ModuleName      = $env:BHProjectName
-                        ParameterFilter = { $OutputType -eq $type}
+                        ParameterFilter = { $OutputType -eq $type }
                         Exactly         = $true
                         Times           = 1
                         Scope           = 'It'
@@ -326,7 +326,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
                     $assertMockCalledSplat = @{
                         CommandName     = "Convert-Result"
                         ModuleName      = $env:BHProjectName
-                        ParameterFilter = { $OutputType -eq $type}
+                        ParameterFilter = { $OutputType -eq $type }
                         Exactly         = $true
                         Times           = 0
                         Scope           = 'It'
@@ -511,7 +511,7 @@ Describe "Invoke-JiraMethod" -Tag 'Unit' {
             }
         }
 
-        Context "Paged restuls" {
+        Describe "Paged restuls" {
             Mock Invoke-WebRequest -ModuleName $env:BHProjectName {
                 ShowMockInfo 'Invoke-WebRequest' -Params 'Uri', 'Method', 'Body'
 

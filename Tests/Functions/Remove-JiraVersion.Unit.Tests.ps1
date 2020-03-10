@@ -87,7 +87,7 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
         Mock Get-JiraProject -ModuleName JiraPS {
             $Projects = ConvertFrom-Json $JiraProjectData
             $Projects.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
-            $Projects | Where-Object {$_.Key -in $Project}
+            $Projects | Where-Object { $_.Key -in $Project }
         }
 
         Mock Get-JiraVersion -ModuleName JiraPS {
@@ -132,7 +132,7 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
         }
         #endregion Mock
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraVersion
 
             defParam $command 'Version'
@@ -140,7 +140,7 @@ Describe "Get-JiraVersion" -Tag 'Unit' {
             defParam $command 'Force'
         }
 
-        Context "Behavior checking" {
+        Describe "Behavior checking" {
             It 'removes a Version using its ID' {
                 { Remove-JiraVersion -Version $versionID1 -Force -ErrorAction Stop } | Should Not Throw
                 Assert-MockCalled 'Get-JiraVersion' -Times 1 -Scope It -ModuleName JiraPS -Exactly

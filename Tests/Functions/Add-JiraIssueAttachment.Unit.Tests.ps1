@@ -85,7 +85,7 @@ Describe "Add-JiraIssueAttachment" -Tag 'Unit' {
         #endregion Mock
 
         #region Tests
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Add-JiraIssueAttachment
 
             defParam $command 'Issue'
@@ -94,7 +94,7 @@ Describe "Add-JiraIssueAttachment" -Tag 'Unit' {
             defParam $command 'PassThru'
         }
 
-        Context "Behavior checking" {
+        Describe "Behavior checking" {
             <#
             Remember to check for:
                 - each ParameterSet
@@ -162,9 +162,9 @@ Describe "Add-JiraIssueAttachment" -Tag 'Unit' {
                 Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' } -Exactly -Times 0 -Scope It
             }
             It 'accepts files over the pipeline' {
-                { $filePath | Add-JiraIssueAttachment $issueKey  } | Should Not Throw
-                { @($filePath, $filePath) | Add-JiraIssueAttachment $issueKey  } | Should Not Throw
-                { Get-Item $filePath | Add-JiraIssueAttachment $issueKey  } | Should Not Throw
+                { $filePath | Add-JiraIssueAttachment $issueKey } | Should Not Throw
+                { @($filePath, $filePath) | Add-JiraIssueAttachment $issueKey } | Should Not Throw
+                { Get-Item $filePath | Add-JiraIssueAttachment $issueKey } | Should Not Throw
 
                 # ensure the calls under the hood
                 Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 4 -Scope It

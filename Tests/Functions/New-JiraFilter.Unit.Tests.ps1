@@ -47,7 +47,7 @@ Describe 'New-JiraFilter' -Tag 'Unit' {
             ConvertTo-JiraFilter
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri', 'Body'
             ConvertFrom-Json $responseFilter
         }
@@ -58,7 +58,7 @@ Describe 'New-JiraFilter' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name New-JiraFilter
 
             defParam $command 'Name'
@@ -70,7 +70,7 @@ Describe 'New-JiraFilter' -Tag 'Unit' {
             defAlias $command 'Favourite' 'Favorite'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Invokes the Jira API to create a filter" {
                 {
                     $newData = @{
@@ -93,7 +93,7 @@ Describe 'New-JiraFilter' -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "-Name and -JQL" {
                 {
                     $parameter = @{

@@ -54,7 +54,7 @@ Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
             $fullFilter
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Delete' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission*"} {
+        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission*" } {
             ShowMockInfo 'Invoke-JiraMethod' 'Method', 'Uri'
         }
 
@@ -64,7 +64,7 @@ Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
         }
         #endregion Mocks
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Remove-JiraFilterPermission
 
             defParam $command 'Filter'
@@ -73,7 +73,7 @@ Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
             defParam $command 'Credential'
         }
 
-        Context "Behavior testing" {
+        Describe "Behavior testing" {
             It "Deletes Permission from Filter Object" {
                 {
                     Get-JiraFilterPermission -Id 1 | Remove-JiraFilterPermission
@@ -105,7 +105,7 @@ Describe 'Remove-JiraFilterPermission' -Tag 'Unit' {
             }
         }
 
-        Context "Input testing" {
+        Describe "Input testing" {
             It "validates the -Filter to ensure FilterPermissions" {
                 { Remove-JiraFilterPermission -Filter (Get-JiraFilter -Id 1) } | Should -Throw
                 { Remove-JiraFilterPermission -Filter (Get-JiraFilterPermission -Id 1) } | Should -Not -Throw

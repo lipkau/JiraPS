@@ -57,7 +57,7 @@ Describe "Set-JiraVersion" -Tag 'Unit' {
     }
     #endregion Mocking
 
-    Context "Sanity checking" {
+    Describe "Sanity checking" {
         $command = Get-Command -Name Set-JiraVersion
 
         It "has a parameter 'Version' of type [Object[]]" {
@@ -97,7 +97,7 @@ Describe "Set-JiraVersion" -Tag 'Unit' {
         }
     }
 
-    Context "Behavior checking" {
+    Describe "Behavior checking" {
         It "sets an Issue's Version Name" {
             $version = Get-JiraVersion -Project $projectKey -Name $versionName
             $results = Set-JiraVersion -Version $version -Name "NewName" -ErrorAction Stop

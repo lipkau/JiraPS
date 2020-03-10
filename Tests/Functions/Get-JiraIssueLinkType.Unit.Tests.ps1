@@ -24,15 +24,15 @@ Describe 'Get-JiraIssueLinkType' -Tag 'Unit' {
             Write-Output $jiraServer
         }
 
-        Context "Sanity checking" {
+        Describe "Sanity checking" {
             $command = Get-Command -Name Get-JiraIssueLinkType
 
             defParam $command 'LinkType'
             defParam $command 'Credential'
         }
 
-        $filterAll = {$Method -eq 'Get' -and $Uri -ceq "$jiraServer/rest/api/latest/issueLinkType"}
-        $filterOne = {$Method -eq 'Get' -and $Uri -ceq "$jiraServer/rest/api/latest/issueLinkType/10000"}
+        $filterAll = { $Method -eq 'Get' -and $Uri -ceq "$jiraServer/rest/api/latest/issueLinkType" }
+        $filterOne = { $Method -eq 'Get' -and $Uri -ceq "$jiraServer/rest/api/latest/issueLinkType/10000" }
 
         Mock ConvertTo-JiraIssueLinkType {
             ShowMockInfo 'ConvertTo-JiraIssueLinkType'
@@ -69,7 +69,7 @@ Describe 'Get-JiraIssueLinkType' -Tag 'Unit' {
             }
         }
 
-        Context "Behavior testing - returning all link types" {
+        Describe "Behavior testing - returning all link types" {
 
             $output = Get-JiraIssueLinkType
 
@@ -82,11 +82,11 @@ Describe 'Get-JiraIssueLinkType' -Tag 'Unit' {
             }
 
             It 'Uses the helper method ConvertTo-JiraIssueLinkType to process output' {
-                Assert-MockCalled -CommandName ConvertTo-JiraIssueLinkType -ParameterFilter {$InputObject -contains 'foo'} -Exactly -Times 1 -Scope Context
+                Assert-MockCalled -CommandName ConvertTo-JiraIssueLinkType -ParameterFilter { $InputObject -contains 'foo' } -Exactly -Times 1 -Scope Context
             }
         }
 
-        Context "Behavior testing - returning one link type" {
+        Describe "Behavior testing - returning one link type" {
             Mock ConvertTo-JiraIssueLinkType {
                 ShowMockInfo 'ConvertTo-JiraIssueLinkType'
 
