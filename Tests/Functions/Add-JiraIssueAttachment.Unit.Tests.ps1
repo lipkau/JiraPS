@@ -1,183 +1,168 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
-[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "")]
-param()
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
-Describe "Add-JiraIssueAttachment" -Tag 'Unit' {
-
+Describe 'Add-JiraIssueAttachment' -Tag 'Unit' {
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
+        $fileName = 'MyFile.txt'
+        $filePath = "TestDrive:\$fileName"
+        Set-Content $filePath -Value 'my test text.'
 
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $pass = ConvertTo-SecureString -AsPlainText -Force -String "passowrd"
-        $Cred = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList ("user", $pass)
-        $jiraServer = 'http://jiraserver.example.com'
-        $issueKey = "FOO-1234"
-        $file = New-Item -Path "TestDrive:\MyFile.txt" -ItemType File -Force
-        $fileName = $file.Name
-        $filePath = $file.FullName
-        $attachmentId = 10010
-
-        $attachmentJson = @"
-{
-    "self": "$jiraServer/rest/api/2/attachment/$attachmentId",
-    "id": "$attachmentId",
-    "filename": "$fileName",
-    "author": {
-        "self": "$jiraServer/rest/api/2/user?username=admin",
-        "name": "admin",
-        "key": "admin",
-        "accountId": "0000:000000-0000-0000-0000-ab899c878d00",
-        "emailAddress": "admin@example.com",
-        "avatarUrls": { },
-        "displayName": "Admin",
-        "active": true,
-        "timeZone": "Europe/Berlin"
-    },
-    "created": "2017-10-16T09:06:48.070+0200",
-    "size": 438098,
-    "mimeType": "'applation/pdf'",
-    "content": "$jiraServer/secure/attachment/$attachmentId/$fileName"
-}
-"@
-
-        Set-Content $filePath -value "my test text."
+        $attachmentResponse = @{
+            'RestURL'  = 'http://jiraserver.example.com/rest/api/2/attachment/10010'
+            'id'       = '10010'
+            'filename' = 'image.png'
+            'author'   = [AtlassianPS.JiraPS.User]@{
+                'RestURL'      = 'http://jiraserver.example.com/rest/api/2/user?username=admin'
+                'name'         = 'admin'
+                'key'          = 'admin'
+                'accountId'    = '0000:000000-0000-0000-0000-ab899c878d00'
+                'emailAddress' = 'admin@example.com'
+                'displayName'  = 'Admin'
+                'active'       = $true
+                'timeZone'     = 'Europe/Berlin'
+            }
+            'created'  = '2017-10-16T09:06:48.070+0200'
+            'size'     = 438098
+            'mimeType' = "'applation/pdf'"
+            'content'  = 'http://jiraserver.example.com/secure/attachment/10010/image.png'
+        }
 
         #region Mock
-        Mock ConvertTo-JiraAttachment -ModuleName JiraPS {
-            $InputObject
-        }
+        Add-CommonMocks
 
-        Mock Get-JiraIssue -ModuleName JiraPS {
-            $Issue = [PSCustomObject]@{
-                Key     = $issueKey
-                RestURL = "$jiraServer/rest/api/latest/issue/$issueKey"
-            }
-            $Issue.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
-            $Issue
-        }
+        Add-MockGetJiraIssue
 
-        Mock Resolve-JiraIssueObject -ModuleName JiraPS {
-            Get-JiraIssue -Key $Issue
-        }
+        Mock Resolve-FilePath -ModuleName 'JiraPS' { $Path }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueKey/attachments" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            ConvertFrom-Json -InputObject $attachmentJson
-        }
-
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Post' -and
+            $Uri -like "*/issue/*/attachments*"
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+            [AtlassianPS.JiraPS.Attachment]$attachmentResponse
         }
         #endregion Mock
+    }
 
-        #region Tests
-        Describe "Sanity checking" {
-            $command = Get-Command -Name Add-JiraIssueAttachment
+    Describe 'Behavior checking' {
+        BeforeAll {
+            Set-Content -Path TestDrive:\access.log -Value 'some content'
+            Set-Content -Path TestDrive:\error.log -Value 'some content'
 
-            defParam $command 'Issue'
-            defParam $command 'FilePath'
-            defParam $command 'Credential'
-            defParam $command 'PassThru'
+            $files = Get-ChildItem TestDrive:\*.log
         }
 
-        Describe "Behavior checking" {
-            <#
-            Remember to check for:
-                - each ParameterSet
-                - each Parameter
-                - each ValueFromPipeline
-                - each 'Throw'
-                - each possible Output
-                - each object type
-            #>
-            It 'validates the parameters' {
-                # Issue can't be null or empty
-                { Add-JiraIssueAttachment -Issue "" -FilePath $filePath } | Should Throw
-                # Issue must be an Issue or a String
-                { Add-JiraIssueAttachment -Issue (Get-Date) -FilePath $filePath -verbose } | Should Throw
-                # Issue can't be an array
-                { Add-JiraIssueAttachment -Issue $issueKey, $issueKey -FilePath $filePath } | Should Throw
-                # File must exist
-                { Add-JiraIssueAttachment -Issue $issueKey -FilePath "c:\no-file.txt" } | Should Throw
-                # All Parameters for DefaultParameterSet
-                { Add-JiraIssueAttachment -Issue $issueKey -FilePath $filePath } | Should Not Throw
-                { Add-JiraIssueAttachment -Issue (Get-JiraIssue $issueKey) -FilePath $filePath -Credential $Cred } | Should Not Throw
-                { Add-JiraIssueAttachment -Issue $issueKey -FilePath @($filePath, $filePath) -Credential $Cred -PassThru } | Should Not Throw
+        It 'attaches files to a ticket' {
+            Add-JiraIssueAttachment -Issue 'TEST-001' -FilePath $files.FullName -ErrorAction Stop
 
-                # ensure the calls under the hood
-                Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 4 -Scope It
-                Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 3 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' } -Exactly -Times 4 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' } -Exactly -Times 0 -Scope It
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                Exactly         = $true
+                Times           = 2
+                Scope           = 'It'
+                ParameterFilter = { $RawBody -eq $true }
             }
-            It 'accepts positional parameters' {
-                { Add-JiraIssueAttachment $issueKey @($filePath, $filePath) } | Should Not Throw
+            Assert-MockCalled @assertMockCalledSplat
+        }
+    }
 
-                # ensure the calls under the hood
-                Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' } -Exactly -Times 2 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' } -Exactly -Times 0 -Scope It
-            }
-            It 'has no output by default' {
-                $result = Add-JiraIssueAttachment -Issue $issueKey -FilePath $filePath
-                $result | Should BeNullOrEmpty
+    Describe 'Input testing' {
+        BeforeAll {
+            Set-Content -Path TestDrive:\access.log -Value 'some content'
+            Set-Content -Path TestDrive:\error.log -Value 'some content'
 
-                # ensure the calls under the hood
-                Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' } -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' } -Exactly -Times 0 -Scope It
-            }
-            It 'returns an object when specified' {
-                $result = Add-JiraIssueAttachment -Issue $issueKey -FilePath $filePath -PassThru
-                $result | Should Not BeNullOrEmpty
+            $files = Get-ChildItem TestDrive:\*.log
 
-                # ensure the calls under the hood
-                Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' } -Exactly -Times 1 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' } -Exactly -Times 0 -Scope It
-            }
-            It 'accepts files over the pipeline' {
-                { $filePath | Add-JiraIssueAttachment $issueKey } | Should Not Throw
-                { @($filePath, $filePath) | Add-JiraIssueAttachment $issueKey } | Should Not Throw
-                { Get-Item $filePath | Add-JiraIssueAttachment $issueKey } | Should Not Throw
+            $issue = $mockedJiraIssue
+        }
 
-                # ensure the calls under the hood
-                Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 4 -Scope It
-                Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 4 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' } -Exactly -Times 4 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' } -Exactly -Times 0 -Scope It
-                Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -ParameterFilter { $Method -eq 'Delete' } -Exactly -Times 0 -Scope It
+        It 'fetches the Issue if an incomplete object was provided' {
+            Add-JiraIssueAttachment -Issue 'TEST-001' -FilePath $files.FullName -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName 'JiraPS' -Exactly -Times 1 -Scope It
+        }
+
+        It 'uses the provided Issue when a complete object was provided' {
+            Add-JiraIssueAttachment -Issue $issue -FilePath $files.FullName -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName 'JiraPS' -Exactly -Times 0 -Scope It
+        }
+
+        It "files when the file doesn't exist" {
+            { Add-JiraIssueAttachment -Issue $issue -FilePath 'non-existing.file' -ErrorAction Stop } | Should -Throw -Because 'ArgumentException: File not found'
+        }
+
+        It 'returns an object when specified' {
+            $result = Add-JiraIssueAttachment -Issue $issue -FilePath $files -PassThru -ErrorAction Stop
+
+            $result | Should -Not -BeNullOrEmpty
+        }
+
+        It 'accepts multiple Users' {
+            Add-JiraIssueAttachment -Issue $issue -FilePath $files -PassThru -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 2
+                Scope       = 'It'
             }
-            It "assert VerifiableMock" {
-                Assert-VerifiableMock
+            Assert-MockCalled @assertMockCalledSplat
+        }
+
+        It 'accepts files over the pipeline' {
+            $files | Add-JiraIssueAttachment -Issue $issue -ErrorAction Stop
+        }
+    }
+
+    Describe 'Forming of the request' {
+        BeforeAll {
+            Set-Content -Path TestDrive:\access.log -Value 'some content'
+
+            $files = Get-ChildItem TestDrive:\access.log
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
             }
         }
-        #endregion Tests
+
+        It 'uses the multipart form-data boundary correctly' {
+            Add-JiraIssueAttachment -Issue 'TEST-001' -FilePath $files.FullName -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -match "(?sm)^--([a-f0-9-]{36}).*--\1--$" -and
+                $Headers['Content-Type'] -like ("*boundary=`"{0}`"" -f $matches[1])
+            }
+        }
+
+        It 'deactivates atlassian xsrf check' {
+            Add-JiraIssueAttachment -Issue 'TEST-001' -FilePath $files.FullName -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Headers['X-Atlassian-Token'] -eq 'nocheck'
+            }
+        }
+
+        It 'uses octet-stream for the form upload' {
+            Add-JiraIssueAttachment -Issue 'TEST-001' -FilePath $files.FullName -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Headers['Content-Type'] -like "multipart/form-data*" -and
+                $Body -like "*Content-Type: application/octet-stream*"
+            }
+        }
+
+        It 'sets the filename in the form upload' {
+            Add-JiraIssueAttachment -Issue 'TEST-001' -FilePath $files.FullName -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -like "*Content-Disposition: form-data; name=`"file`"; filename=`"access.log`"*"
+            }
+        }
     }
 }

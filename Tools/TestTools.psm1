@@ -1,3 +1,7 @@
+#requires -modules JiraPS
+#requires -modules BuildHelpers
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
 $script:DebugMode = $false
 
 #region ExposedFunctions
@@ -8,30 +12,33 @@ function Invoke-InitTest {
     )
 
     Remove-Item -Path Env:\BH*
-    $projectRoot = (Resolve-Path "$Path/../..").Path
-    if ($projectRoot -like "*Release") {
-        $projectRoot = (Resolve-Path "$projectRoot/..").Path
-    }
+    $projectRoot = Get-ProjectPath -Path $Path
 
     Import-Module BuildHelpers
     Set-BuildEnvironment -BuildOutput '$ProjectPath/Release' -Path $projectRoot -ErrorAction SilentlyContinue
 
-    $env:BHManifestToTest = $env:BHPSModuleManifest
-    $env:BHisBuild = $PSScriptRoot -like "$env:BHBuildOutput*"
-    if ($env:BHisBuild) {
-        $Pattern = [regex]::Escape($env:BHProjectPath)
-
-        $env:BHBuildModuleManifest = $env:BHPSModuleManifest -replace $Pattern, $env:BHBuildOutput
-        $env:BHManifestToTest = $env:BHBuildModuleManifest
-    }
-
     # Import-Module "$env:BHProjectPath/Tools/BuildTools.psm1"
-    Remove-Module $env:BHProjectName -ErrorAction SilentlyContinue
+    Remove-Module JiraPS -ErrorAction SilentlyContinue
+}
+
+function Get-ProjectPath {
+    param(
+        [Parameter(Mandatory)][String]$Path
+    )
+
+    $_path = Resolve-Path $Path
+    While ($_path) {
+        $nextLevel = Split-Path -Path $_path
+
+        if ((Get-ChildItem $_path -Force -Attributes D).Name -contains '.git') { return $_path }
+        elseif ($_path -eq $nextLevel) { return $null }
+        else { $_path = $nextLevel }
+    }
 }
 
 function Invoke-TestCleanup {
     param()
-    Remove-Module $env:BHProjectName -ErrorAction SilentlyContinue
+    Remove-Module JiraPS -ErrorAction SilentlyContinue
     Remove-Module BuildHelpers -ErrorAction SilentlyContinue
     Remove-Item -Path Env:\BH*
 }
@@ -42,8 +49,7 @@ function Set-DebugMode {
     $script:DebugMode = $Enabled
 }
 
-function ShowMockInfo {
-    [CmdletBinding()]
+function Write-MockInfo {
     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingWriteHost', '')]
     param(
         $functionName,
@@ -57,11 +63,26 @@ function ShowMockInfo {
     }
 }
 
-Mock "Write-Debug" {
-    MockedDebug $Message
-}
+#region Mocked objects
+#endregion Mocked objects
 
-function MockedDebug {
+#region Mocked Cmdlets
+function Add-CommonMocks {
+    Mock Write-Debug { Write-MockDebug $Message }
+
+    Mock Write-DebugMessage -ModuleName JiraPS { }
+
+    Mock Invoke-JiraMethod {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+        throw 'Unidentified call to Invoke-JiraMethod'
+    }
+}
+}
+#endregion Mocked Cmdlets
+
+Export-ModuleMember -Function * -Variable *
+
+function Write-MockDebug {
     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingWriteHost', '')]
     [CmdletBinding()]
     param(
