@@ -68,7 +68,7 @@ Get-JiraIssue "CS-15" | Format-List *
 
 # EXAMPLES
 
-1. Creating issues from a CSV file
+## Example: Creating issues from a CSV file
 
 Given a CSV file which looks something like this:
 
@@ -84,7 +84,7 @@ Issues can be created for each for the entries above with JiraPS like this:
 Import-CSV "./data.csv" | Foreach { New-JiraIssue -Project $_.project -Summary $_.summary -Description $_.description -Assignee $_.assignee }
 ```
 
-2. Set the "fixVersions" of multiple issues at once
+## Example: Set the "fixVersions" of multiple issues at once
 
 ```powershell
 # Get all versions from the project
@@ -116,5 +116,5 @@ Find us on GitHub or Slack, and let us know what you think.
 
 # KEYWORDS
 
-- Jira
-- Atlassian
+* Jira
+* Atlassian

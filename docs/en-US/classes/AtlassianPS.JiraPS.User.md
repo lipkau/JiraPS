@@ -217,7 +217,8 @@ Default value: False
 ### KeyValuePair[string,string] identify()
 
 Returns a Key-Value pair containing the information of what property
-(with what value) should be used to identify this user.
+(with what value).
+Should be used to identify this user.
 
 #### Example
 
