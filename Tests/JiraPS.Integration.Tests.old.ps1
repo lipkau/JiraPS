@@ -7,7 +7,7 @@ Describe 'Load Module' -Tag 'Integration' {
 
     #ASSERT
     It "imports the module" {
-        Get-Module JiraPS | Should BeOfType [PSModuleInfo]
+        Get-Module JiraPS | Should -BeOfType [PSModuleInfo]
     }
 }
 
@@ -26,7 +26,7 @@ InModuleScope JiraPS {
 
             # ASSERT
             It 'stores the server address' {
-                Get-JiraConfigServer | Should Be $env:JiraURI
+                Get-JiraConfigServer | Should -Be $env:JiraURI
             }
         }
 
@@ -36,7 +36,7 @@ InModuleScope JiraPS {
 
             # ASSERT
             It 'can authenticate with the API' {
-                $myUser | Should Not BeNullOrEmpty
+                $myUser | Should -Not -BeNullOrEmpty
                 checkType $myUser 'JiraPS.User'
             }
         }
@@ -49,11 +49,11 @@ InModuleScope JiraPS {
 
             # ASSERT
             It 'stored the session' {
-                $session | Should Not BeNullOrEmpty
+                $session | Should -Not -BeNullOrEmpty
             }
             checkPsType $session 'JiraPS.Session'
             It 'can authenticate with the API' {
-                $myUser | Should Not BeNullOrEmpty
+                $myUser | Should -Not -BeNullOrEmpty
                 checkType $myUser 'JiraPS.User'
             }
         }
@@ -135,17 +135,17 @@ InModuleScope JiraPS {
                 checkType $result5 'JiraPS.Version'
             }
             It 'returns the expected objects' {
-                $result1.Name -contains $versionName1 | Should Be $true
-                $result1.Name -contains $versionName2 | Should Be $true
-                $result1.Name -contains $versionName3 | Should Be $true
-                $result2.Name -contains $versionName1 | Should Be $true
-                $result2.Name -contains $versionName2 | Should Be $true
-                $result2.Name -contains $versionName3 | Should Be $true
-                $result1.ToString() | Should Be $result2.ToString()
-                $result3.Name -contains $versionName1 | Should Be $true
-                $result3.Name -contains $versionName2 | Should Be $true
-                $result1.ToString() | Should Be $result4.ToString()
-                $result4.ToString() | Should Be $result5.ToString()
+                $result1.Name -contains $versionName1 | Should -Be $true
+                $result1.Name -contains $versionName2 | Should -Be $true
+                $result1.Name -contains $versionName3 | Should -Be $true
+                $result2.Name -contains $versionName1 | Should -Be $true
+                $result2.Name -contains $versionName2 | Should -Be $true
+                $result2.Name -contains $versionName3 | Should -Be $true
+                $result1.ToString() | Should -Be $result2.ToString()
+                $result3.Name -contains $versionName1 | Should -Be $true
+                $result3.Name -contains $versionName2 | Should -Be $true
+                $result1.ToString() | Should -Be $result4.ToString()
+                $result4.ToString() | Should -Be $result5.ToString()
             }
         }
 
@@ -170,18 +170,18 @@ InModuleScope JiraPS {
             }
             It 'changes field value by parameters' {
                 $version1 = Get-JiraVersion -Id $oldVersion1.Id
-                $version1.Name | Should Be $versionNewName1
-                $version1.Name | Should Not Be $oldVersion1.Name
+                $version1.Name | Should -Be $versionNewName1
+                $version1.Name | Should -Not -Be $oldVersion1.Name
             }
             It 'clears the value of a field' {
-                $oldVersion2.Description | Should Not BeNullOrEmpty
+                $oldVersion2.Description | Should -Not -BeNullOrEmpty
                 $version2 = Get-JiraVersion -Id $oldVersion2.Id
-                $version2.Description | Should BeNullOrEmpty
-                $version2.Description | Should Not Be $oldVersion2.Description
+                $version2.Description | Should -BeNullOrEmpty
+                $version2.Description | Should -Not -Be $oldVersion2.Description
             }
             It 'changes field value by the pipeline' {
                 $version3 = Get-JiraVersion -Id $oldVersion2.Id, $oldVersion3.Id
-                $version3.ReleaseDate[0].ToString('yyyy-MM-dd') | Should Be $now.ToString('yyyy-MM-dd')
+                $version3.ReleaseDate[0].ToString('yyyy-MM-dd') | Should -Be $now.ToString('yyyy-MM-dd')
             }
         }
 
@@ -196,7 +196,7 @@ InModuleScope JiraPS {
 
             # ASSERT
             It 'removes the versions' {
-                Get-JiraVersion -Project $projectKey -Name $versionName1, $versionName2, $versionName3 | Should BeNullOrEmpty
+                Get-JiraVersion -Project $projectKey -Name $versionName1, $versionName2, $versionName3 | Should -BeNullOrEmpty
             }
         }
     }
@@ -330,13 +330,13 @@ InModuleScope JiraPS {
             # ASSERT
             It 'returns an object with specific properties' {
                 checkType $result1 'JiraPS.Group'
-                $result2 | Should BeNullOrEmpty
+                $result2 | Should -BeNullOrEmpty
             }
 
             It 'adds a user as member of the group' {
-                $result1.Size | Should Be 2
-                (Get-JiraGroupMember -Group $group1 | Measure-Object).Count | Should Be 2
-                (Get-JiraGroupMember -Group $groupName2 | Measure-Object).Count | Should Be 1
+                $result1.Size | Should -Be 2
+                (Get-JiraGroupMember -Group $group1 | Measure-Object).Count | Should -Be 2
+                (Get-JiraGroupMember -Group $groupName2 | Measure-Object).Count | Should -Be 1
             }
 
             It 'shows the group membership in all relevant objects' {
@@ -375,8 +375,8 @@ InModuleScope JiraPS {
             $result2 = $groupName2 | Remove-JiraGroupMember -User $user1 -Force
 
             # ASSERT
-            Get-JiraGroupMember -Group $group1 | Should BeNullOrEmpty
-            Get-JiraGroupMember -Group $groupName2 | Should BeNullOrEmpty
+            Get-JiraGroupMember -Group $group1 | Should -BeNullOrEmpty
+            Get-JiraGroupMember -Group $groupName2 | Should -BeNullOrEmpty
         }
 
         Describe "Remove-JiraUser" {
@@ -389,8 +389,8 @@ InModuleScope JiraPS {
             Get-JiraUser $collectionOfUsers | Remove-JiraUser -Force -ErrorAction SilentlyContinue
 
             # ASSERT
-            Get-JiraUser -User $userName | Should BeNullOrEmpty
-            Get-JiraUser $collectionOfUsers | Should BeNullOrEmpty
+            Get-JiraUser -User $userName | Should -BeNullOrEmpty
+            Get-JiraUser $collectionOfUsers | Should -BeNullOrEmpty
         }
 
         Describe "Remove-JiraGroup" {
@@ -404,8 +404,8 @@ InModuleScope JiraPS {
             Get-JiraGroup $groups | Remove-JiraGroup -Force -ErrorAction Stop
 
             # ASSERT
-            { Get-JiraGroup -GroupName $groupName -ErrorAction Stop } | Should Throw
-            { Get-JiraGroup $groups -ErrorAction Stop } | Should Throw
+            { Get-JiraGroup -GroupName $groupName -ErrorAction Stop } | Should -Throw
+            { Get-JiraGroup $groups -ErrorAction Stop } | Should -Throw
         }
 
     } #>

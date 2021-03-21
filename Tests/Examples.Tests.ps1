@@ -1,25 +1,23 @@
-#requires -modules BuildHelpers
-#requires -modules Pester
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Validation of example codes in the documentation" -Tag Documentation, NotImplemented {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    Assert-True $script:isBuild "Examples can only be tested in the build environment. Please run `Invoke-Build -Task Build`."
-
-    $functions = Get-Command -Module $env:BHProjectName | Get-Help
+    <# $functions = Get-Command -Module JiraPS | Get-Help
     foreach ($function in $functions) {
         Describe "Examples of $($function.Name)" {
 
+            # TODO: execute the script in example blocks of the documentation
 
         }
-    }
+    } #>
 }

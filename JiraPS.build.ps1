@@ -64,19 +64,19 @@ task GetNextVersion {
 
 #region HarmonizeVariables
 switch ($true) {
-    {$IsWindows} {
+    { $IsWindows } {
         $OS = "Windows"
         if (-not ($IsCoreCLR)) {
             $OSVersion = $PSVersionTable.BuildVersion.ToString()
         }
     }
-    {$IsLinux} {
+    { $IsLinux } {
         $OS = "Linux"
     }
-    {$IsMacOs} {
+    { $IsMacOs } {
         $OS = "OSX"
     }
-    {$IsCoreCLR} {
+    { $IsCoreCLR } {
         $OSVersion = $PSVersionTable.OS
     }
 }
@@ -103,6 +103,10 @@ task ShowInfo Init, GetNextVersion, {
     Write-Build Gray ('PowerShell version:         {0}' -f $PSVersionTable.PSVersion.ToString())
     Write-Build Gray ('OS:                         {0}' -f $OS)
     Write-Build Gray ('OS Version:                 {0}' -f $OSVersion)
+    Write-Build Gray '-------------------------------------------------------'
+    Write-Build Gray
+    Write-Build Gray "Build Variables:"
+    Write-Build Gray (Get-ChildItem Env:\BH*, Env:\BI* | Out-String)
     Write-Build Gray
 }
 #endregion DebugInformation
@@ -130,7 +134,6 @@ task CopyModuleFiles {
 
 # Synopsis: Prepare tests for ./Release
 task PrepareTests Init, {
-    $null = New-Item -Path "$env:BHBuildOutput/Tests" -ItemType Directory -ErrorAction SilentlyContinue
     Copy-Item -Path "$env:BHProjectPath/Tests" -Destination $env:BHBuildOutput -Recurse -Force
     Copy-Item -Path "$env:BHProjectPath/PSScriptAnalyzerSettings.psd1" -Destination $env:BHBuildOutput -Force
 }
@@ -185,7 +188,7 @@ task GenerateExternalHelp Init, {
 task UpdateManifest GetNextVersion, {
     Remove-Module $env:BHProjectName -ErrorAction SilentlyContinue
     Import-Module $env:BHPSModuleManifest -Force
-    $ModuleAlias = @(Get-Alias | Where-Object {$_.ModuleName -eq "$env:BHProjectName"})
+    $ModuleAlias = @(Get-Alias | Where-Object { $_.ModuleName -eq "$env:BHProjectName" })
 
     BuildHelpers\Update-Metadata -Path "$env:BHBuildOutput/$env:BHProjectName/$env:BHProjectName.psd1" -PropertyName ModuleVersion -Value $env:NextBuildVersion
     # BuildHelpers\Update-Metadata -Path "$env:BHBuildOutput/$env:BHProjectName/$env:BHProjectName.psd1" -PropertyName FileList -Value (Get-ChildItem "$env:BHBuildOutput/$env:BHProjectName" -Recurse).Name
@@ -221,14 +224,14 @@ task Test Init, {
 
     try {
         $parameter = @{
-            Script       = "$env:BHBuildOutput/Tests/*"
+            Path         = "$env:BHBuildOutput/Tests/*"
+            Show         = "Failed"
             Tag          = $Tag
             ExcludeTag   = $ExcludeTag
-            Show         = "Fails"
-            PassThru     = $true
-            OutputFile   = "$env:BHProjectPath/Test-$OS-$($PSVersionTable.PSVersion.ToString()).xml"
-            OutputFormat = "NUnitXml"
             # CodeCoverage = $codeCoverageFiles
+            OutputFormat = "NUnitXml"
+            OutputFile   = "$env:BHProjectPath/Test-$OS-$($PSVersionTable.PSVersion.ToString()).xml"
+            PassThru     = $true
         }
         $testResults = Invoke-Pester @parameter
 
@@ -247,7 +250,7 @@ task Deploy Init, PublishToGallery, TagReplository, UpdateHomepage
 # Synpsis: Publish the $release to the PSGallery
 task PublishToGallery {
     Assert-True (-not [String]::IsNullOrEmpty($PSGalleryAPIKey)) "No key for the PSGallery"
-    Assert-True {Get-Module $env:BHProjectName -ListAvailable} "Module $env:BHProjectName is not available"
+    Assert-True { Get-Module $env:BHProjectName -ListAvailable } "Module $env:BHProjectName is not available"
 
     Remove-Module $env:BHProjectName -ErrorAction Ignore
 
@@ -307,7 +310,7 @@ task UpdateHomepage {
 
         Pop-Location
     }
-    catch { Write-Warning "Failed to deploy to homepage"}
+    catch { Write-Warning "Failed to deploy to homepage" }
 }
 #endregion Publish
 
@@ -317,8 +320,8 @@ task Clean Init, RemoveGeneratedFiles, RemoveTestResults
 
 # Synopsis: Remove generated and temp files.
 task RemoveGeneratedFiles {
-    Remove-Item "$env:BHModulePath/en-US/*" -Force -ErrorAction SilentlyContinue
-    Remove-Item $env:BHBuildOutput -Force -Recurse -ErrorAction SilentlyContinue
+    Remove-Item -Path "$env:BHModulePath/en-US/*" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$env:BHBuildOutput" -Recurse -Force -ErrorAction SilentlyContinue -WhatIf
 }
 
 # Synopsis: Remove Pester results
@@ -330,3 +333,4 @@ task RemoveTestResults {
 task . ShowInfo, Clean, Build, Test
 
 Remove-Item -Path Env:\BH*
+Remove-Item -Path Env:\BI*

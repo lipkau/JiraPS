@@ -1,58 +1,52 @@
-#requires -modules BuildHelpers
-#requires -modules Pester
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "General project validation" -Tag Unit {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../JiraPS" -Force
+
+        $module = Get-Module JiraPS
+        $testFiles = Get-ChildItem "$PSScriptRoot/*.Tests.ps1" -Recurse
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    $module = Get-Module $env:BHProjectName
-    $testFiles = Get-ChildItem $PSScriptRoot -Include "*.Tests.ps1" -Recurse
+    Describe "Public function: <basename>" -ForEach (Get-ChildItem "$env:BHModulePath/Public/*.ps1" | Foreach-Object {
+            @{ BaseName = $_.BaseName }
+        }) {
+        # TODO
+        It "has a test file" {
+            $BaseName = $BaseName -replace "\-", "-$($module.Prefix)"
+            $expectedTestFile = "$BaseName.Unit.Tests.ps1"
 
-    Describe "Public functions" {
-        $publicFunctions = (Get-ChildItem "$env:BHModulePath/Public/*.ps1").BaseName
+            $testFiles.Name | Should -Contain $expectedTestFile
+        }
 
-        foreach ($function in $publicFunctions) {
+        It "is exported" {
+            $expectedFunctionName = $BaseName -replace "\-", "-$($module.Prefix)"
 
-            # TODO
-            It "has a test file for $function" {
-                $expectedTestFile = "$function.Unit.Tests.ps1"
-
-                $testFiles.Name | Should -Contain $expectedTestFile
-            }
-
-            It "exports $function" {
-                $expectedFunctionName = $function -replace "\-", "-$($module.Prefix)"
-
-                $module.ExportedCommands.keys | Should -Contain $expectedFunctionName
-            }
+            $module.ExportedCommands.keys | Should -Contain $expectedFunctionName
         }
     }
 
-    Describe "Private functions" {
-        $privateFunctions = (Get-ChildItem "$env:BHModulePath/Private/*.ps1").BaseName
+    Describe "Private function: <basename>"  -ForEach (Get-ChildItem "$env:BHModulePath/Private/*.ps1" | Foreach-Object {
+            @{ BaseName = $_.BaseName }
+        }) {
+        # TODO
+        # It "has a test file for $function" {
+        #     $expectedTestFile = "$BaseName.Unit.Tests.ps1"
 
-        foreach ($function in $privateFunctions) {
+        #     $testFiles.Name | Should -Contain $expectedTestFile
+        # }
 
-            # TODO
-            # It "has a test file for $function" {
-            #     $expectedTestFile = "$function.Unit.Tests.ps1"
+        It "is not exported $BaseName" {
+            $expectedFunctionName = $BaseName -replace "\-", "-$($module.Prefix)"
 
-            #     $testFiles.Name | Should -Contain $expectedTestFile
-            # }
-
-            It "does not export $function" {
-                $expectedFunctionName = $function -replace "\-", "-$($module.Prefix)"
-
-                $module.ExportedCommands.keys | Should -Not -Contain $expectedFunctionName
-            }
+            $module.ExportedCommands.keys | Should -Not -Contain $expectedFunctionName
         }
     }
 
@@ -79,11 +73,9 @@ Describe "General project validation" -Tag Unit {
 #>
 
     Describe "Project stucture" {
-        $publicFunctions = (Get-Module -Name $env:BHProjectName).ExportedFunctions.Keys
-
-        It "has all the public functions as a file in '$env:BHProjectName/Public'" {
-            foreach ($function in $publicFunctions) {
-                # $function = $function.Replace((Get-Module -Name $env:BHProjectName).Prefix, '')
+        It "has all the public functions as a file in 'JiraPS/Public'" {
+            foreach ($function in $module.ExportedFunctions.Keys) {
+                # $function = $function.Replace($module.Prefix, '')
 
                 (Get-ChildItem "$env:BHModulePath/Public").BaseName | Should -Contain $function
             }

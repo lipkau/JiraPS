@@ -1,66 +1,61 @@
-#requires -modules BuildHelpers
-#requires -modules Pester
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 #requires -modules PSScriptAnalyzer
 
 Describe "PSScriptAnalyzer Tests" -Tag Unit {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../JiraPS" -Force
+
+        $settingsPath = "$PSScriptRoot/../PSScriptAnalyzerSettings.psd1"
+        if (-not (Test-Path $settingsPath)) {
+            $settingsPath = "$PSScriptRoot/../JiraPS/PSScriptAnalyzerSettings.psd1"
+        }
+
+        $isaSplatParameter = @{
+            Path          = $env:BHModulePath
+            Settings      = $settingsPath
+            Severity      = @('Error', 'Warning')
+            Recurse       = $true
+            Verbose       = $false
+            ErrorVariable = 'ErrorVariable'
+            ErrorAction   = 'SilentlyContinue'
+        }
+        $ScriptWarnings = Invoke-ScriptAnalyzer @isaSplatParameter
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    $settingsPath = if ($script:isBuild) {
-        "$env:BHBuildOutput/PSScriptAnalyzerSettings.psd1"
-    }
-    else {
-        "$env:BHProjectPath/PSScriptAnalyzerSettings.psd1"
-    }
-
-    $Params = @{
-        Path          = $env:BHModulePath
-        Settings      = $settingsPath
-        Severity      = @('Error', 'Warning')
-        Recurse       = $true
-        Verbose       = $false
-        ErrorVariable = 'ErrorVariable'
-        ErrorAction   = 'SilentlyContinue'
-    }
-    $ScriptWarnings = Invoke-ScriptAnalyzer @Params
-    $scripts = Get-ChildItem $env:BHModulePath -Include *.ps1, *.psm1 -Recurse
-
-    foreach ($Script in $scripts) {
-        $RelPath = $Script.FullName.Replace($env:BHProjectPath, '') -replace '^\\', ''
-
-        Describe "$RelPath" {
-
+    Describe "on file <basename>" -ForEach (Get-ChildItem $env:BHModulePath -Include *.ps1, *.psm1 -Recurse | Foreach-Object {
+            @{
+                BaseName = $_.BaseName
+                FullName = $_.FullName
+            }
+        } ) {
+        It "passes all the rules" {
             $Rules = $ScriptWarnings |
-            Where-Object { $_.ScriptPath -like $Script.FullName } |
+            Where-Object { $_.ScriptPath -like $FullName } |
             Select-Object -ExpandProperty RuleName -Unique
 
             foreach ($rule in $Rules) {
-                It "passes rule '$rule'" {
-                    $BadLines = $ScriptWarnings |
-                    Where-Object { $_.ScriptPath -like $Script.FullName -and $_.RuleName -like $rule } |
-                    Select-Object -ExpandProperty Line
-                    $BadLines | Should -Be $null
-                }
+                $BadLines = ($ScriptWarnings |
+                    Where-Object { $_.ScriptPath -like $FullName -and $_.RuleName -like $rule }).Line
+                $BadLines | Should -Be $null
             }
+        }
 
+        It "has no parse errors" {
             $Exceptions = $null
             if ($ErrorVariable) {
                 $Exceptions = $ErrorVariable.Exception.Message |
-                Where-Object { $_ -match [regex]::Escape($Script.FullName) }
+                Where-Object { $_ -match [regex]::Escape($FullName) }
             }
 
-            It "has no parse errors" {
-                foreach ($Exception in $Exceptions) {
-                    $Exception | Should -BeNullOrEmpty
-                }
+            foreach ($Exception in $Exceptions) {
+                $Exception | Should -BeNullOrEmpty
             }
         }
     }

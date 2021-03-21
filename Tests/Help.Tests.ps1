@@ -1,119 +1,116 @@
-#requires -modules BuildHelpers
-#requires -modules Pester
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Help tests" -Tag Documentation {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../Tools/TestTools.psm1" -force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../JiraPS" -Force
+
+        # $module = Get-Module JiraPS
+        $defaultParams = @(
+            'Verbose'
+            'Debug'
+            'ErrorAction'
+            'WarningAction'
+            'InformationAction'
+            'ErrorVariable'
+            'WarningVariable'
+            'InformationVariable'
+            'OutVariable'
+            'OutBuffer'
+            'PipelineVariable'
+            'WhatIf'
+            'Confirm'
+        )
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    $DefaultParams = @(
-        'Verbose'
-        'Debug'
-        'ErrorAction'
-        'WarningAction'
-        'InformationAction'
-        'ErrorVariable'
-        'WarningVariable'
-        'InformationVariable'
-        'OutVariable'
-        'OutBuffer'
-        'PipelineVariable'
-        'WhatIf'
-        'Confirm'
-    )
+    Describe "Help of public functions for <commandName>" -ForEach (Get-Command -Module JiraPS -CommandType Cmdlet, Function | Foreach-Object {
+            @{
+                Definition    = $_.Definition
+                HelpUri       = $_.HelpUri
+                Parameters    = $_.Parameters
+                ParameterSets = $_.ParameterSets
+                Help          = (Get-Help $_.Name -ErrorAction Stop)
+                # commandName   = ($_.Name -replace $module.Prefix, '')
+                commandName   = $_.Name
+                markdownFile  = (Resolve-Path "$env:BHProjectPath/docs/en-US/commands/$($_.Name).md" -ErrorAction Stop)
+            }
+        }) {
 
-    $module = Get-Module $env:BHProjectName
-    $commands = Get-Command -Module $module -CommandType Cmdlet, Function, Workflow  # Not alias
-    # $classes = Get-ChildItem "$env:BHProjectPath/docs/en-US/classes/*"
-    # $enums = Get-ChildItem "$env:BHProjectPath/docs/en-US/enumerations/*"
-
-    #region Public Functions
-    foreach ($command in $commands) {
-        $commandName = $command.Name -replace $module.Prefix, ''
-        $markdownFile = Resolve-Path "$env:BHProjectPath/docs/en-US/commands/$commandName.md"
-
-        # The module-qualified command fails on Microsoft.PowerShell.Archive cmdlets
-        $help = Get-Help $command.Name -ErrorAction Stop
-
-        Describe "Function $commandName's Help" {
-
-            It "is described in a markdown file" {
-                $markdownFile | Should -Not -BeNullOrEmpty
+        Describe "PlatyPS markdown files" {
+            It "is described in a markdown file for" {
                 Test-Path $markdownFile | Should -Be $true
             }
 
-            It "does not have Comment-Based Help" {
-                # We use .EXAMPLE, as we test this extensivly and it is never auto-generated
-                $command.Definition | Should -Not -BeNullOrEmpty
-                $Pattern = [regex]::Escape(".EXAMPLE")
-
-                $command.Definition | Should -Not -Match "^\s*$Pattern"
-            }
-
-            It "has no platyPS template artifacts" {
-                $markdownFile | Should -Not -BeNullOrEmpty
+            It "has no platyPS template artifacts for" {
                 $markdownFile | Should -Not -FileContentMatch '{{.*}}'
             }
 
+            It "defines the frontmatter for the homepage for" {
+                $markdownFile | Should -FileContentMatch "Module Name: JiraPS"
+                $markdownFile | Should -FileContentMatchExactly "layout: documentation"
+                $markdownFile | Should -FileContentMatch "permalink: /docs/JiraPS/commands/$commandName/"
+            }
+        }
+
+        Describe "Documentation in code" {
+            It "does not have Comment-Based Help" {
+                # We use .EXAMPLE, as we test this extensivly and it is never auto-generated
+                $Definition | Should -Not -BeNullOrEmpty
+                $Pattern = [regex]::Escape(".EXAMPLE")
+
+                $Definition | Should -Not -Match "^\s*$Pattern"
+            }
+        }
+
+        # TODO: make this work again!
+        Describe "Documentation from ExternalHelp" -Skip {
             It "has a link to the 'Online Version'" {
-                [Uri]$onlineLink = ($help.relatedLinks.navigationLink | Where-Object linkText -eq "Online Version:").Uri
+                # The module-qualified command fails on Microsoft.PowerShell.Archive cmdlets
+                [Uri]$onlineLink = ($Help.relatedLinks.navigationLink | Where-Object linkText -eq "Online Version:").Uri
 
                 $onlineLink.Authority | Should -Be "atlassianps.org"
                 $onlineLink.Scheme | Should -Be "https"
-                $onlineLink.PathAndQuery | Should -Be "/docs/$env:BHProjectName/commands/$commandName/"
+                $onlineLink.PathAndQuery | Should -Be "/docs/JiraPS/commands/$commandName/"
             }
 
-            it "has a valid HelpUri" {
-                $command.HelpUri | Should -Not -BeNullOrEmpty
-                $Pattern = [regex]::Escape("https://atlassianps.org/docs/$env:BHProjectName/commands/$commandName")
+            It "has a valid HelpUri" {
+                $HelpUri | Should -Not -BeNullOrEmpty
+                $Pattern = [regex]::Escape("https://atlassianps.org/docs/JiraPS/commands/$commandName")
 
-                $command.HelpUri | Should -Match $Pattern
+                $HelpUri | Should -Match $Pattern
             }
 
-            It "defines the frontmatter for the homepage" {
-                $markdownFile | Should -Not -BeNullOrEmpty
-                $markdownFile | Should -FileContentMatch "Module Name: $env:BHProjectName"
-                $markdownFile | Should -FileContentMatchExactly "layout: documentation"
-                $markdownFile | Should -FileContentMatch "permalink: /docs/$env:BHProjectName/commands/$commandName/"
-            }
-
-            # Should be a synopsis for every function
             It "has a synopsis" {
-                $help.Synopsis | Should -Not -BeNullOrEmpty
+                $Help.Synopsis | Should -Not -BeNullOrEmpty
             }
 
-            # Should be a syntax for every function
             It "has a syntax" {
-                # syntax is starting with a small case as all the standard powershell commands have syntax with lower case, see (Get-Help Get-ChildItem) | gm
-                $help.syntax | Should -Not -BeNullOrEmpty
+                $Help.syntax | Should -Not -BeNullOrEmpty
             }
 
-            # Should be a description for every function
             It "has a description" {
-                $help.Description.Text -join '' | Should -Not -BeNullOrEmpty
+                $Help.Description.Text -join '' | Should -Not -BeNullOrEmpty
             }
 
-            # Should be at least one example
             It "has examples" {
-                ($help.Examples.Example | Select-Object -First 1).Code | Should -Not -BeNullOrEmpty
+                ($Help.Examples.Example | Select-Object -First 1).Code | Should -Not -BeNullOrEmpty
             }
 
-            # Should be at least one example description
+            # Should -Be at least one example description
             It "has desciptions for all examples" {
-                foreach ($example in ($help.Examples.Example)) {
+                foreach ($example in ($Help.Examples.Example)) {
                     $example.remarks.Text | Should -Not -BeNullOrEmpty
                 }
             }
 
             It "has at least as many examples as ParameterSets" {
-                ($help.Examples.Example | Measure-Object).Count | Should -BeGreaterOrEqual $command.ParameterSets.Count
+                ($Help.Examples.Example | Measure-Object).Count | Should -BeGreaterOrEqual $ParameterSets.Count
             }
 
             # It "does not define parameter position for functions with only one ParameterSet" {
@@ -124,24 +121,24 @@ Describe "Help tests" -Tag Documentation {
             #     }
             # }
 
-            foreach ($parameterName in $command.Parameters.Keys) {
-                $parameterCode = $command.Parameters[$parameterName]
+            It "has each parameter documented property" {
+                foreach ($parameterName in $Parameters.Keys) {
+                    $parameterCode = $command.Parameters[$parameterName]
 
-                if ($help.Parameters | Get-Member -Name Parameter) {
-                    $parameterHelp = $help.Parameters.Parameter | Where-Object Name -EQ $parameterName
+                    if ($help.Parameters | Get-Member -Name Parameter) {
+                        $parameterHelp = $help.Parameters.Parameter | Where-Object Name -eq $parameterName
 
-                    if ($parameterName -notin $DefaultParams) {
-                        It "has a description for parameter [-$parameterName] in $commandName" {
+                        if ($parameterName -notin $defaultParams) {
+                            #It "has a description for parameter [-$parameterName] in $commandName" {
                             $parameterHelp.Description.Text | Should -Not -BeNullOrEmpty
-                        }
+                            #}
 
-                        It "has a mandatory flag for parameter [-$parameterName] in $commandName" {
+                            #It "has a mandatory flag for parameter [-$parameterName] in $commandName" {
                             $isMandatory = $parameterCode.ParameterSets.Values.IsMandatory -contains "True"
-
                             $parameterHelp.Required | Should -BeLike $isMandatory.ToString()
-                        }
+                            #}
 
-                        It "matches the type of the parameter in code and help" {
+                            #It "matches the type of the parameter in code and help" {
                             $codeType = $parameterCode.ParameterType.Name
                             if ($codeType -eq "Object") {
                                 if (($parameterCode.Attributes) -and ($parameterCode.Attributes | Get-Member -Name PSTypeName)) {
@@ -153,6 +150,7 @@ Describe "Help tests" -Tag Documentation {
                             if ($helpType -eq "PSCustomObject") { $helpType = "PSObject" }
 
                             $helpType | Should -Be $codeType
+                            #}
                         }
                     }
                 }
@@ -160,79 +158,78 @@ Describe "Help tests" -Tag Documentation {
 
             It "does not have parameters that are not in the code" {
                 $parameter = @()
-                if ($help.Parameters | Get-Member -Name Parameter) {
-                    $parameter = $help.Parameters.Parameter.Name | Sort-Object -Unique
+                if ($Help.Parameters | Get-Member -Name Parameter) {
+                    $parameter = $Help.Parameters.Parameter.Name | Sort-Object -Unique
                 }
                 foreach ($helpParm in $parameter) {
-                    $command.Parameters.Keys | Should -Contain $helpParm
+                    $Parameters.Keys | Should -Contain $helpParm
                 }
             }
         }
     }
-    #endregion Public Functions
 
-    #region Classes
-    <# foreach ($class in $classes) {
-        Describe "Classes $($class.BaseName) Help" {
+    Describe "Help of classes" {
+        <# foreach ($class in $classes) {
+            Describe "Classes $($class.BaseName) Help" {
 
-            It "is described in a markdown file" {
-                $class.FullName | Should -Not -BeNullOrEmpty
-                Test-Path $class.FullName | Should -Be $true
-            }
+                It "is described in a markdown file" {
+                    $class.FullName | Should -Not -BeNullOrEmpty
+                    Test-Path $class.FullName | Should -Be $true
+                }
 
-            It "has no platyPS template artifacts" {
-                $class.FullName | Should -Not -BeNullOrEmpty
-                $class.FullName | Should -Not -FileContentMatch '{{.*}}'
-            }
+                It "has no platyPS template artifacts" {
+                    $class.FullName | Should -Not -BeNullOrEmpty
+                    $class.FullName | Should -Not -FileContentMatch '{{.*}}'
+                }
 
-            It "defines the frontmatter for the homepage" {
-                $class.FullName | Should -Not -BeNullOrEmpty
-                $class.FullName | Should -FileContentMatch "Module Name: $env:BHProjectName"
-                $class.FullName | Should -FileContentMatchExactly "layout: documentation"
-                $class.FullName | Should -FileContentMatch "permalink: /docs/$env:BHProjectName/classes/$($class.BaseName)/"
+                It "defines the frontmatter for the homepage" {
+                    $class.FullName | Should -Not -BeNullOrEmpty
+                    $class.FullName | Should -FileContentMatch "Module Name: JiraPS"
+                    $class.FullName | Should -FileContentMatchExactly "layout: documentation"
+                    $class.FullName | Should -FileContentMatch "permalink: /docs/JiraPS/classes/$($class.BaseName)/"
+                }
             }
         }
+
+
+        Describe "Missing classes" {
+            It "has a documentation file for every class" {
+                foreach ($class in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsClass)) {
+                    $classes.BaseName | Should -Contain $class.FullName
+                }
+            }
+        } #>
     }
 
+    Describe "Help of enumerations" {
+        <# foreach ($enum in $enums) {
+            Describe "Enumeration $($enum.BaseName) Help" {
 
-    Describe "Missing classes" {
-        It "has a documentation file for every class" {
-            foreach ($class in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsClass)) {
-                $classes.BaseName | Should -Contain $class.FullName
+                It "is described in a markdown file" {
+                    $enum.FullName | Should -Not -BeNullOrEmpty
+                    Test-Path $enum.FullName | Should -Be $true
+                }
+
+                It "has no platyPS template artifacts" {
+                    $enum.FullName | Should -Not -BeNullOrEmpty
+                    $enum.FullName | Should -Not -FileContentMatch '{{.*}}'
+                }
+
+                It "defines the frontmatter for the homepage" {
+                    $enum.FullName | Should -Not -BeNullOrEmpty
+                    $enum.FullName | Should -FileContentMatch "Module Name: JiraPS"
+                    $enum.FullName | Should -FileContentMatchExactly "layout: documentation"
+                    $enum.FullName | Should -FileContentMatch "permalink: /docs/JiraPS/enumerations/$($enum.BaseName)/"
+                }
             }
         }
-    } #>
-    #endregion Classes
 
-    #region Enumerations
-    <# foreach ($enum in $enums) {
-        Describe "Enumeration $($enum.BaseName) Help" {
-
-            It "is described in a markdown file" {
-                $enum.FullName | Should -Not -BeNullOrEmpty
-                Test-Path $enum.FullName | Should -Be $true
+        Describe "Missing enumerations" {
+            It "has a documentation file for every enumeration" {
+                foreach ($enum in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsEnum)) {
+                    $enums.BaseName | Should -Contain $enum.FullName
+                }
             }
-
-            It "has no platyPS template artifacts" {
-                $enum.FullName | Should -Not -BeNullOrEmpty
-                $enum.FullName | Should -Not -FileContentMatch '{{.*}}'
-            }
-
-            It "defines the frontmatter for the homepage" {
-                $enum.FullName | Should -Not -BeNullOrEmpty
-                $enum.FullName | Should -FileContentMatch "Module Name: $env:BHProjectName"
-                $enum.FullName | Should -FileContentMatchExactly "layout: documentation"
-                $enum.FullName | Should -FileContentMatch "permalink: /docs/$env:BHProjectName/enumerations/$($enum.BaseName)/"
-            }
-        }
+        } #>
     }
-
-    Describe "Missing enumerations" {
-        It "has a documentation file for every enumeration" {
-            foreach ($enum in ([AtlassianPS.ServerData].Assembly.GetTypes() | Where-Object IsEnum)) {
-                $enums.BaseName | Should -Contain $enum.FullName
-            }
-        }
-    } #>
-    #endregion Enumerations
 }
