@@ -24,6 +24,35 @@ namespace AtlassianPS
             public Uri x32 { get; set; }
             public Uri x48 { get; set; }
         }
+
+
+
+        [Serializable]
+        public class Status
+        {
+            public Status(UInt64 value) { Id = value; }
+            public Status(String value) {
+                UInt64 _id;
+                if (UInt64.TryParse(value, out _id))
+                    Id = _id;
+                else
+                    Name = value;
+             }
+            public Status() { }
+
+            public UInt64 Id { get; set; }
+            public String Name { get; set; }
+            public String Description { get; set; }
+            public StatusCategory Category { get; set; }
+            public Uri IconUrl { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString()
+            {
+                return Name;
+            }
+        }
+
         [Serializable]
         public class StatusCategory
         {

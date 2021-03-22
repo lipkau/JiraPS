@@ -1,5 +1,6 @@
 function ConvertTo-JiraStatus {
     [CmdletBinding()]
+    [OutputType( [AtlassianPS.JiraPS.Status] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,24 +8,24 @@ function ConvertTo-JiraStatus {
     )
 
     process {
-        foreach ($i in $InputObject) {
+        foreach ($object in $InputObject) {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
 
-            $props = @{
-                'ID'          = $i.id
-                'Name'        = $i.name
-                'Description' = $i.description
-                'IconUrl'     = $i.iconUrl
-                'RestUrl'     = $i.self
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.Status')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.Name)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.Status](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        Id,
+                    name,
+                    description,
+                    @{ Name = 'Category'; Expression = {
+                            if ($object.statusCategory) { ConvertTo-JiraStatusCategory $object.statusCategory } else { $null }
+                        }
+                    },
+                    iconUrl,
+                    @{Name = "RestUrl"; Expression = {
+                            if ($object.self) { $object.self } else { $null }
+                        }
+                    }
+                )
+            )
         }
     }
 }
