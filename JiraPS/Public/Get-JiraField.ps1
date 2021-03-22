@@ -1,9 +1,10 @@
-﻿function Get-JiraField {
+function Get-JiraField {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( DefaultParameterSetName = '_All' )]
+    [OutputType( [AtlassianPS.JiraPS.Field] )]
     param(
         [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = '_Search' )]
-        [String[]]
+        [AtlassianPS.JiraPS.Field[]]
         $Field,
 
         [Parameter()]
@@ -17,7 +18,15 @@
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi = "$server/rest/api/latest/field"
+        $parameter = @{
+            URI        = "$server/rest/api/latest/field"
+            Method     = "GET"
+            OutputType = "JiraField"
+            Credential = $Credential
+            Cmdlet     = $PSCmdlet
+        }
+        Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
+        $allFields = Invoke-JiraMethod @parameter
     }
 
     process {
@@ -26,24 +35,19 @@
 
         switch ($PSCmdlet.ParameterSetName) {
             '_All' {
-                $parameter = @{
-                    URI        = $resourceURi
-                    Method     = "GET"
-                    Credential = $Credential
-                }
-                Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                $result = Invoke-JiraMethod @parameter
-
-                Write-Output (ConvertTo-JiraField -InputObject $result)
+                $allFields
             }
             '_Search' {
                 foreach ($_field in $Field) {
                     Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_field]"
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_field [$_field]"
 
-                    $allFields = Get-JiraField -Credential $Credential
-
-                    Write-Output ($allFields | Where-Object -FilterScript {($_.Id -eq $_field) -or ($_.Name -like $_field)})
+                    if ($_field.Id) {
+                        $allFields | Where-Object { ($_.Id -eq $_field.Id) }
+                    }
+                    else {
+                        $allFields | Where-Object { ($_.Name -like $_field.Name) }
+                    }
                 }
             }
         }

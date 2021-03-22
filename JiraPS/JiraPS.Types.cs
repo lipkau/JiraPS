@@ -26,6 +26,49 @@ namespace AtlassianPS
         }
 
 
+        [Serializable]
+        public class Field
+        {
+            public Field(String value)
+            {
+                if (value.Contains(" "))
+                {
+                    Name = value;
+                }
+                else if (value.ToLower() == value)
+                {
+                    Id = value;
+                    Key = value;
+                }
+                else if (value.ToLower().Contains("customfield_"))
+                {
+                    Id = value.ToLower();
+                    Key = value.ToLower();
+                }
+                else
+                {
+                    Name = value;
+                }
+            }
+            public Field() { }
+
+            public String Id { get; set; }
+            public String Key { get; set; }
+            public String Name { get; set; }
+            public Boolean Custom { get; set; }
+            public Boolean Orderable { get; set; }
+            public Boolean Navigable { get; set; }
+            public Boolean Searchable { get; set; }
+            public String[] ClauseNames { get; set; }
+            public PSObject Schema { get; set; }
+
+            public override string ToString()
+            {
+                return Name ?? "id: " + Id;
+            }
+        }
+
+
 
         [Serializable]
         public class Status

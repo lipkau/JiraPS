@@ -1,5 +1,6 @@
 function ConvertTo-JiraField {
     [CmdletBinding()]
+    [OutputType( [AtlassianPS.JiraPS.Field] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,27 +8,21 @@ function ConvertTo-JiraField {
     )
 
     process {
-        foreach ($i in $InputObject) {
+        foreach ($object in $InputObject) {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
 
-            $props = @{
-                'ID'          = $i.id
-                'Name'        = $i.name
-                'Custom'      = [System.Convert]::ToBoolean($i.custom)
-                'Orderable'   = [System.Convert]::ToBoolean($i.orderable)
-                'Navigable'   = [System.Convert]::ToBoolean($i.navigable)
-                'Searchable'  = [System.Convert]::ToBoolean($i.searchable)
-                'ClauseNames' = $i.clauseNames
-                'Schema'      = $i.schema
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.Field')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.Name)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.Field](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        id,
+                    key,
+                    name,
+                    custom,
+                    orderable,
+                    navigable,
+                    searchable,
+                    clauseNames,
+                    schema
+                )
+            )
         }
     }
 }

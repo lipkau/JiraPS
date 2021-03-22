@@ -24,7 +24,8 @@ Get-JiraField [-Credential <PSCredential>] [<CommonParameters>]
 ### _Search
 
 ```powershell
-Get-JiraField [-Field] <String[]> [-Credential <PSCredential>] [<CommonParameters>]
+Get-JiraField [-Field] <AtlassianPS.JiraPS.Field[]> [-Credential <PSCredential>]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -32,7 +33,8 @@ Get-JiraField [-Field] <String[]> [-Credential <PSCredential>] [<CommonParameter
 This function provides information about JIRA fields, or about one field in particular.
 This is a good way to identify a field's ID by its name, or vice versa.
 
-Typically, this information is only needed when identifying what fields are necessary to create or edit issues.
+Typically, this information is only needed when identifying what fields are necessary
+to create or edit issues.
 See `Get-JiraIssueCreateMetadata` for more details.
 
 ## EXAMPLES
@@ -60,7 +62,7 @@ This example returns information about the Key field.
 The Field name or ID to search.
 
 ```yaml
-Type: String[]
+Type: AtlassianPS.JiraPS.Field[]
 Parameter Sets: _Search
 Aliases:
 
@@ -90,14 +92,16 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
+-InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable,
+-Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
 ## OUTPUTS
 
-### [JiraPS.Field]
+### [AtlassianPS.JiraPS.Field]
 
 ## NOTES
 
