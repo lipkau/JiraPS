@@ -25,6 +25,16 @@ namespace AtlassianPS
             public Uri x48 { get; set; }
         }
         [Serializable]
+        public class StatusCategory
+        {
+            public UInt64 Id { get; set; }
+            public String Key { get; set; }
+            public String Name { get; set; }
+            public String ColorName { get; set; }
+            public Uri RestUrl { get; set; }
+        }
+
+        [Serializable]
         public class User
         {
             public User(String value)
