@@ -69,10 +69,34 @@ namespace AtlassianPS
         }
 
 
+        [Serializable]
+        public class Role {
+            public Role(String value) {
+                Name = value;
+            }
+            public Role() { }
+
+            public UInt64 Id { get; set; }
+            public String Name { get; set; }
+            public String Description { get; set; }
+            public RoleActor[] Actors { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString() {
+                return Name;
+            }
+        }
 
         [Serializable]
-        public class Status
-        {
+        public class RoleActor {
+            public RoleActor() { }
+
+            public UInt64 Id { get; set; }
+            public String Name { get; set; }
+            public String DisplayName { get; set; }
+            public ActorType Type { get; set; }
+        }
+
             public Status(UInt64 value) { Id = value; }
             public Status(String value) {
                 UInt64 _id;
