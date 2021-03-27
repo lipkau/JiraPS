@@ -1,150 +1,98 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "Get-JiraIssueType" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $issueTypeId = 2
-        $issueTypeName = 'Desktop Support'
-
-        $restResult = @"
+        #region Definitions
+        $issueTypeResponse = ConvertFrom-Json -InputObject @"
 [
     {
-        "self": "$jiraServer/rest/api/latest/issuetype/12",
-        "id": "12",
-        "description": "This issue type is no longer used.",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/delete.png",
-        "name": "ZZ_DO_NOT_USE",
-        "subtask": false
+        "self": "https://powershell.atlassian.net/rest/api/2/issuetype/10207",
+        "id": "10207",
+        "description": "For customer support issues. Created by JIRA Service Desk.",
+        "iconUrl": "https://powershell.atlassian.net/secure/viewavatar?size=medium&avatarId=10607&avatarType=issuetype",
+        "name": "Support",
+        "untranslatedName": "Support",
+        "subtask": false,
+        "avatarId": 10607
     },
     {
-        "self": "$jiraServer/rest/api/latest/issuetype/11",
-        "id": "11",
-        "description": "An issue related to classroom technology, moodle, library services",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/documentation.png",
-        "name": "Educational Technology Services",
-        "subtask": false
-    },
-    {
-        "self": "$jiraServer/rest/api/latest/issuetype/4",
-        "id": "4",
-        "description": "An issue related to network connectivity or infrastructure including Access Control.",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/improvement.png",
-        "name": "Network Services",
-        "subtask": false
-    },
-    {
-        "self": "$jiraServer/rest/api/latest/issuetype/6",
-        "id": "6",
-        "description": "An issue related to telephone services",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/genericissue.png",
-        "name": "Telephone Services",
-        "subtask": false
-    },
-    {
-        "self": "$jiraServer/rest/api/latest/issuetype/8",
-        "id": "8",
-        "description": "An issue related to A/V and media services including teacher stations",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/genericissue.png",
-        "name": "A/V-Media Services",
-        "subtask": false
-    },
-    {
-        "self": "$jiraServer/rest/api/latest/issuetype/1",
-        "id": "1",
-        "description": "An issue related to Banner, MU Online, Oracle Reports, MU Account Suite, Hobsons, or CS Gold",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/bug.png",
-        "name": "Administrative System",
-        "subtask": false
-    },
-    {
-        "self": "$jiraServer/rest/api/latest/issuetype/10",
-        "id": "10",
-        "description": "The sub-task of the issue",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/subtask_alternate.png",
-        "name": "Sub-task",
-        "subtask": true
-    },
-    {
-        "self": "$jiraServer/rest/api/latest/issuetype/2",
-        "id": "2",
-        "description": "An issue related to end-user workstations.",
-        "iconUrl": "$jiraServer/images/icons/issuetypes/newfeature.png",
-        "name": "Desktop Support",
-        "subtask": false
+        "self": "https://powershell.atlassian.net/rest/api/2/issuetype/10204",
+        "id": "10204",
+        "description": "Created by JIRA Service Desk.",
+        "iconUrl": "https://powershell.atlassian.net/secure/viewavatar?size=medium&avatarId=10604&avatarType=issuetype",
+        "name": "Change",
+        "untranslatedName": "Change",
+        "subtask": false,
+        "avatarId": 10604
     }
 ]
 "@
+        #endregion Definitions
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+        #region Mocks
+        Add-CommonMocks
+        Add-MockGetJiraConfigServer
+
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Get' -and
+            $Uri -like '*/issuetype*'
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+        }
+        #endregion Mocks
+    }
+
+    Describe 'Behavior testing' {
+        BeforeAll {
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                ModuleName  = 'JiraPS'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
+            }
         }
 
-        Mock ConvertTo-JiraIssueType {
-            $inputObject
-        }
-
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $Uri -eq "$jiraServer/rest/api/latest/issuetype" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            ConvertFrom-Json $restResult
-        }
-
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
-
-        It "Gets all issue types in Jira if called with no parameters" {
-            $allResults = Get-JiraIssueType
-            $allResults | Should Not BeNullOrEmpty
-            @($allResults).Count | Should Be 8
-            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
-        }
-
-        It "Gets a specified issue type if an issue type ID is provided" {
-            $oneResult = Get-JiraIssueType -IssueType $issueTypeId
-            $oneResult | Should Not BeNullOrEmpty
-            $oneResult.ID | Should Be $issueTypeId
-            $oneResult.Name | Should Be $issueTypeName
-        }
-
-        It "Gets a specified issue type if an issue type name is provided" {
-            $oneResult = Get-JiraIssueType -IssueType $issueTypeName
-            $oneResult | Should Not BeNullOrEmpty
-            $oneResult.ID | Should Be $issueTypeId
-            $oneResult.Name | Should Be $issueTypeName
-        }
-
-        It "Handles positional parameters correctly" {
-            $oneResult = Get-JiraIssueType 'Desktop Support'
-            $oneResult | Should Not BeNullOrEmpty
-            $oneResult.ID | Should Be 2
-            $oneResult.Name | Should Be 'Desktop Support'
-        }
-
-        Describe "Output Checking" {
-
+        It 'Get all available IssueTypes' {
             Get-JiraIssueType
 
-            It "Uses ConvertTo-JiraIssueType to beautify output" {
-                Assert-MockCalled 'ConvertTo-JiraIssueType'
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Method -eq 'Get' -and
+                $Uri -like '*/rest/api/*/issuetype'
+            }
+        }
+
+        It 'Get a specific IssueType' {
+            Get-JiraIssueType -IssueType 1000
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Method -eq 'Get' -and
+                $Uri -like '*/rest/api/*/issuetype/1000'
             }
         }
     }
+
+    Describe 'Input testing' {
+        It "can find an IssueType by it's Id" {
+            Get-JiraIssueType -IssueType 12844 -ErrorAction Stop
+        }
+
+        It 'fails if the IssueType contains no Id' {
+            { Get-JiraIssueType -IssueType "Bug" -ErrorAction Stop } | Should -Throw -ExpectedMessage 'IssueType needs to be identifiable by Id. Id was missing.'
+        }
+
+        It 'accecpts multiple IssueTypes' {
+            Get-JiraIssueType -IssueType 12844, 12845, 12846 -ErrorAction Stop
+        }
+
+        It "allows for the IssueType to be passed over the pipeline" {
+            10001 | Get-JiraIssueType -ErrorAction Stop
+            $mockedJiraIssueType | Get-JiraIssueType -ErrorAction Stop
+        }
+    }
+
+    Describe 'Forming of the request' { }
 }

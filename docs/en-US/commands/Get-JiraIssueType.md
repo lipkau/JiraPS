@@ -21,17 +21,16 @@ Returns information about the available issue type in JIRA.
 Get-JiraIssueType [-Credential <PSCredential>] [<CommonParameters>]
 ```
 
-### _Search
+### _ById_
 
 ```powershell
-Get-JiraIssueType [-IssueType] <String[]> [-Credential <PSCredential>] [<CommonParameters>]
+Get-JiraIssueType [-IssueType] <AtlassianPS.JiraPS.IssueType[]>
+[-Credential <PSCredential>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
 
-This function retrieves all the available IssueType on the JIRA server an returns them as `JiraPS.IssueType`.
-
-This function can restrict the output to a subset of the available IssueTypes if told so.
+This function retrieves all the available IssueType.
 
 ## EXAMPLES
 
@@ -46,28 +45,22 @@ This example returns all the IssueTypes on the JIRA server.
 ### EXAMPLE 2
 
 ```powershell
-Get-JiraIssueType -IssueType "Bug"
+Get-JiraIssueType -IssueType 10000
 ```
 
-This example returns only the IssueType "Bug".
-
-### EXAMPLE 3
-
-```powershell
-Get-JiraIssueType -IssueType "Bug","Task","4"
-```
-
-This example return the information about the IssueType named "Bug" and "Task" and with id "4".
+This example returns only the IssueType with Id 10000.
 
 ## PARAMETERS
 
 ### -IssueType
 
-The Issue Type name or ID to search.
+The IssueType fetch.
+
+IssueType must have a value for `Id`.
 
 ```yaml
-Type: String[]
-Parameter Sets: _Search
+Type: AtlassianPS.JiraPS.IssueType[]
+Parameter Sets: _ById
 Aliases:
 
 Required: True
@@ -96,23 +89,24 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
+-InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable,
+-Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### [Int[]]
-
 ## OUTPUTS
 
-### [JiraPS.IssueType]
+### [AtlassianPS.JiraPS.IssueType]
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 
 ## RELATED LINKS
 
-[Get-JiraIssue](../Get-JiraIssue/)
+[Find-JiraIssueType](../Find-JiraIssueType/)

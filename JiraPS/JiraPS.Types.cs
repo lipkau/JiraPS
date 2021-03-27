@@ -62,8 +62,31 @@ namespace AtlassianPS
             public String[] ClauseNames { get; set; }
             public PSObject Schema { get; set; }
 
-            public override string ToString()
-            {
+
+        [Serializable]
+        public class IssueType {
+            public IssueType(UInt64 value) { Id = value; }
+            public IssueType(String value) {
+                UInt64 _id;
+                if (UInt64.TryParse(value, out _id))
+                    Id = _id;
+                else
+                    Name = value;
+             }
+            public IssueType() { }
+
+            public UInt64 Id { get; set; }
+            public String Name { get; set; }
+            public String Description { get; set; }
+            public Boolean Subtask { get; set; }
+            public Uri IconUrl { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString() {
+                return Name ?? "id: " + Id;
+            }
+        }
+
                 return Name ?? "id: " + Id;
             }
         }
