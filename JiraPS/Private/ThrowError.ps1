@@ -6,6 +6,12 @@ function ThrowError {
         Thanks to Jaykul:
         https://github.com/PoshCode/Configuration/blob/master/Source/Metadata.psm1
     #>
+    [CmdletBinding( )]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        "PSAvoidOverwritingBuiltInCmdlets",
+        "",
+        Justification = "Implementing a proxy function"
+    )]
     param
     (
         [Parameter()]
@@ -48,6 +54,7 @@ function ThrowError {
         [Parameter(Mandatory = $true, ParameterSetName = "Rethrow", Position = 1)]
         [System.Management.Automation.ErrorRecord]$ErrorRecord
     )
+
     process {
         if (!$ErrorRecord) {
             if ($PSCmdlet.ParameterSetName -eq "NewException") {

@@ -1,26 +1,27 @@
 function Convert-Result {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
-        [Parameter( ValueFromPipeline )]
+        [Parameter( Mandatory, ValueFromPipeline )]
+        [Object]
         $InputObject,
 
-        $OutputType
+        [String] $OutputType
     )
 
-    process {
-        foreach ($item in $InputObject){
-            if ($OutputType) {
-                $converter = "ConvertTo-$OutputType"
-            }
+    begin {
+        if ($OutputType) {
+            $converter = "ConvertTo-$OutputType"
+        }
+    }
 
-            if ($converter -and (Test-Path function:\$converter)) {
-                Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Outputting `$result as $OutputType"
-                $item | & $converter
-            }
-            else {
-                Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Outputting `$result"
-                $item
-            }
+    process {
+        if ($converter -and (Test-Path function:\$converter)) {
+            Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Outputting `$InputObject as $OutputType"
+            $InputObject | & $converter
+        }
+        else {
+            Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Outputting without converting type `$InputObject"
+            $InputObject
         }
     }
 }

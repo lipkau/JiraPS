@@ -12,20 +12,21 @@ function Join-Hashtable {
 
 		Merges the hashtables contained in $Hash1 and $Hash2 into a single hashtable.
 #>
-    [CmdletBinding()]
+    [OutputType( )]
+    [OutputType( [Hashtable] )]
     Param (
         # The tables to merge.
-        [Parameter( Mandatory, ValueFromPipeline )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
         [AllowNull()]
         [System.Collections.IDictionary[]]
-        $Hashtable
+        $InputObject
     )
     begin {
         $table = @{ }
     }
 
     process {
-        foreach ($item in $Hashtable) {
+        foreach ($item in $InputObject) {
             foreach ($key in $item.Keys) {
                 $table[$key] = $item[$key]
             }

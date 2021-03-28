@@ -1,5 +1,9 @@
 function Expand-Result {
-    [CmdletBinding()]
+    <#
+    .SYNOPSIS
+    Extract the data from a paginated envelope
+    #>
+    [CmdletBinding( )]
     param(
         [Parameter( Mandatory, ValueFromPipeline )]
         $InputObject

@@ -43,24 +43,29 @@ function Resolve-ErrorWebResponse {
 
             try {
                 $responseObject = ConvertFrom-Json -InputObject $responseBody -ErrorAction Stop
-                Write-VErbose $responseObject
 
-                foreach ($_error in ($responseObject.errorMessages + $responseObject.message + $responseObject.errors)) {
-                    # $_error is a PSCustomObject - therefore can't be $false
+                $allErrors = ($responseObject.errorMessages + $responseObject.message + $responseObject.errors)
+
+                if ($allErrors.Count -eq 0) {
+                    throw "Unable to handle error"
+                }
+
+                foreach ($_error in $allErrors) {
                     if ($_error -is [PSCustomObject]) {
-                        [String]$_error = ($_error | Out-String)
+                        if (0 -eq @($_error.psobject.Properties).Count) { continue }
                     }
-                    if (-not $_error) { throw "Unable to handle error" }
 
-                    $writeErrorSplat = @{
-                        Exception    = $exception
-                        ErrorId      = $errorId
-                        Category     = $errorCategory
-                        Message      = $_error
-                        TargetObject = $targetObject
-                        Cmdlet       = $Cmdlet
+                    if ($_error = Out-String -InputObject $_error) {
+                        $writeErrorSplat = @{
+                            Exception    = $exception
+                            ErrorId      = $errorId
+                            Category     = $errorCategory
+                            Message      = $_error
+                            TargetObject = $targetObject
+                            Cmdlet       = $Cmdlet
+                        }
+                        WriteError @writeErrorSplat
                     }
-                    WriteError @writeErrorSplat
                 }
             }
             catch [ArgumentException] {
@@ -90,11 +95,11 @@ function Resolve-ErrorWebResponse {
         else {
             Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Response had no Body. Using `$StatusCode for generic error"
             $writeErrorSplat = @{
-                Exception    = $exception
-                ErrorId      = $errorId
-                Category     = $errorCategory
-                Message      = "Server responsed with $StatusCode"
-                Cmdlet       = $Cmdlet
+                Exception = $exception
+                ErrorId   = $errorId
+                Category  = $errorCategory
+                Message   = "Server responsed with $StatusCode"
+                Cmdlet    = $Cmdlet
             }
             WriteError @writeErrorSplat
         }

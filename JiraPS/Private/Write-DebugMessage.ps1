@@ -1,5 +1,6 @@
 function Write-DebugMessage {
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [void] )]
     param(
         [Parameter( ValueFromPipeline )]
         [String]

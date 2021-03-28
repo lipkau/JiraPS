@@ -14,6 +14,7 @@ function Resolve-DefaultParameterValue {
 		Returns a hashtable containing all default parameter values in the global scope affecting the command 'Invoke-WebRequest'.
 #>
     [CmdletBinding()]
+    [OutputType( [Hashtable] )]
     param (
         # The hashtable to pick default parameter valeus from.
         [Parameter( Mandatory )]

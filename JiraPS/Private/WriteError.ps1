@@ -6,6 +6,7 @@ function WriteError {
         Thanks to Jaykul:
         https://github.com/PoshCode/Configuration/blob/master/Source/Metadata.psm1
     #>
+    [CmdletBinding( )]
     param
     (
         [Parameter()]
@@ -13,39 +14,40 @@ function WriteError {
         [System.Management.Automation.PSCmdlet]
         $Cmdlet = $((Get-Variable -Scope 1 PSCmdlet).Value),
 
-        [Parameter(Mandatory = $true, ParameterSetName = "ExistingException", Position = 1, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-        [Parameter(ParameterSetName = "NewException")]
+        [Parameter( Position = 1, Mandatory, ValueFromPipeline, ParameterSetName = "ExistingException" )]
+        [Parameter( ParameterSetName = "NewException")]
         [ValidateNotNullOrEmpty()]
         [System.Exception]
         $Exception,
 
-        [Parameter(ParameterSetName = "NewException", Position = 2)]
+        [Parameter( Position = 2, ParameterSetName = "NewException" )]
         [ValidateNotNullOrEmpty()]
         [System.String]
         $ExceptionType = "System.Management.Automation.RuntimeException",
 
-        [Parameter(Mandatory = $true, ParameterSetName = "NewException", Position = 3)]
+        [Parameter( Position = 3, Mandatory, ParameterSetName = "NewException" )]
         [ValidateNotNullOrEmpty()]
         [System.String]
         $Message,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter()]
         [System.Object]
         $TargetObject,
 
-        [Parameter(Mandatory = $true, Position = 10)]
+        [Parameter( Position = 10, Mandatory )]
         [ValidateNotNullOrEmpty()]
         [System.String]
         $ErrorId,
 
-        [Parameter(Mandatory = $true, Position = 11)]
+        [Parameter( Position = 11, Mandatory )]
         [ValidateNotNull()]
         [System.Management.Automation.ErrorCategory]
         $Category,
 
-        [Parameter(Mandatory = $true, ParameterSetName = "Rethrow", Position = 1)]
+        [Parameter( Position = 1, Mandatory, ParameterSetName = "Rethrow" )]
         [System.Management.Automation.ErrorRecord]$ErrorRecord
     )
+
     process {
         if (!$ErrorRecord) {
             if ($PSCmdlet.ParameterSetName -eq "NewException") {

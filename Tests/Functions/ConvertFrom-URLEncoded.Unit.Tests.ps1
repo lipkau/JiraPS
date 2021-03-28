@@ -1,54 +1,35 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertFrom-URLEncoded" -Tag 'Unit' {
-
-    BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        Describe "Sanity checking" {
-            $command = Get-Command -Name ConvertFrom-URLEncoded
-
-            defParam $command 'InputString'
+    Describe 'Behavior checking' {
+        It "does not not allow a null or empty input" {
+            { InModuleScope JiraPS { ConvertFrom-URLEncoded -InputString $null } } | Should -Throw
+            { InModuleScope JiraPS { ConvertFrom-URLEncoded -InputString "" } } | Should -Throw
         }
-        Describe "Handling of Inputs" {
-            It "does not not allow a null or empty input" {
-                { ConvertFrom-URLEncoded -InputString $null } | Should Throw
-                { ConvertFrom-URLEncoded -InputString "" } | Should Throw
-            }
-            It "accepts pipeline input" {
-                { "lorem ipsum" | ConvertFrom-URLEncoded } | Should Not Throw
-            }
-            It "accepts multiple InputStrings" {
-                { ConvertFrom-URLEncoded -InputString "lorem", "ipsum" } | Should Not Throw
-                { "lorem", "ipsum" | ConvertFrom-URLEncoded } | Should Not Throw
-            }
+        It "accepts pipeline input" {
+            InModuleScope JiraPS { "lorem" | ConvertFrom-URLEncoded }
         }
-        Describe "Handling of Outputs" {
-            It "returns as many objects as inputs where provided" {
-                $r1 = ConvertFrom-URLEncoded -InputString "lorem"
-                $r2 = "lorem", "ipsum" | ConvertFrom-URLEncoded
-                $r3 = ConvertFrom-URLEncoded -InputString "lorem", "ipsum", "dolor"
-
-                @($r1).Count | Should Be 1
-                @($r2).Count | Should Be 2
-                @($r3).Count | Should Be 3
-            }
-            It "decodes URL encoded strings" {
-                $output = ConvertFrom-URLEncoded -InputString "Hello%20World%3F"
-                $output | Should Be 'Hello World?'
-            }
+        It "accepts multiple InputStrings" {
+            InModuleScope JiraPS { ConvertFrom-URLEncoded -InputString "lorem", "ipsum" }
+            InModuleScope JiraPS { "lorem", "ipsum" | ConvertFrom-URLEncoded }
+        }
+    }
+    Describe "Handling of Outputs" {
+        BeforeAll {
+            $r1 = InModuleScope JiraPS { ConvertFrom-URLEncoded -InputString "Hello%20World%3F" }
+            $r2 = InModuleScope JiraPS { "Who%20are%20you%3F", "Hey Jude" | ConvertFrom-URLEncoded }
+            $r3 = InModuleScope JiraPS { ConvertFrom-URLEncoded -InputString "The%20Matrix", "Matrix%20Reloaded", "Matrix%20Revolution" }
+        }
+        It "returns as many objects as inputs where provided" {
+            @($r1).Count | Should -Be 1
+            @($r2).Count | Should -Be 2
+            @($r3).Count | Should -Be 3
+        }
+        It "decodes URL encoded strings" {
+            $r1 | Should -Be 'Hello World?'
         }
     }
 }

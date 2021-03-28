@@ -1,4 +1,4 @@
-function ConvertTo-HashTable {
+function ConvertTo-Hashtable {
     <#
     .SYNOPSIS
         Converts a PSCustomObject to Hashtable
@@ -7,18 +7,18 @@ function ConvertTo-HashTable {
         PowerShell v4 on Windows 8.1 seems to have trouble casting [PSCustomObject] to custom classes.
         This function is a workaround, as casting from [Hashtable] is no problem.
     #>
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [OutputType( [Hashtable] )]
     param(
         # Object to convert
-        [Parameter( Mandatory )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
         [PSCustomObject]
         $InputObject
     )
 
-    begin {
+    process {
         $hash = @{ }
-        $InputObject.PSObject.Properties | Foreach-Object {
+        $InputObject.PSObject.Properties | ForEach-Object {
             $hash[$_.Name] = $_.Value
         }
         $hash

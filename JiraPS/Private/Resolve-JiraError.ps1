@@ -1,5 +1,5 @@
-﻿function Resolve-JiraError {
-    [CmdletBinding()]
+function Resolve-JiraError {
+    [OutputType( )]
     param(
         [Parameter( ValueFromPipeline )]
         [Object[]]
@@ -21,6 +21,7 @@
             if ($i.errorMessages) {
                 foreach ($e in $i.errorMessages) {
                     if ($WriteError) {
+                        # TODO: refactor to use WriteError
                         $exception = ([System.ArgumentException]"Server responded with Error")
                         $errorId = "ServerResponse"
                         $errorCategory = 'NotSpecified'
@@ -44,9 +45,10 @@
                 }
             }
             elseif ($i.errors) {
-                $keys = (Get-Member -InputObject $i.errors | Where-Object -FilterScript {$_.MemberType -eq 'NoteProperty'}).Name
+                $keys = (Get-Member -InputObject $i.errors | Where-Object -FilterScript { $_.MemberType -eq 'NoteProperty' }).Name
                 foreach ($k in $keys) {
                     if ($WriteError) {
+                        # TODO: refactor to use WriteError
                         $exception = ([System.ArgumentException]"Server responded with Error")
                         $errorId = "ServerResponse.$k"
                         $errorCategory = 'NotSpecified'
