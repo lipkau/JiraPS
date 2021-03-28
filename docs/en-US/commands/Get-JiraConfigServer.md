@@ -17,7 +17,7 @@ Obtains the configured URL for the JIRA server
 ## SYNTAX
 
 ```powershell
-Get-JiraConfigServer [[-ConfigFile] <String>] [<CommonParameters>]
+Get-JiraConfigServer [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -38,8 +38,10 @@ Returns the server URL of the JIRA server configured for the JiraPS module.
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
+-InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable,
+-Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
@@ -49,7 +51,8 @@ For more information, see about_CommonParameters (http://go.microsoft.com/fwlink
 
 ## NOTES
 
-Support for multiple configuration files is limited at this point in time, but enhancements are planned for a future update.
+Support for multiple configuration files is limited at this point in time,
+but enhancements are planned for a future update.
 
 <https://github.com/AtlassianPS/JiraPS/issues/45>
 <https://github.com/AtlassianPS/JiraPS/issues/194>
@@ -57,3 +60,5 @@ Support for multiple configuration files is limited at this point in time, but e
 ## RELATED LINKS
 
 [about_JiraPS_Authentication](../../about/authentication.html)
+
+[Set-JiraConfigServer](../Set-JiraConfigServer/)

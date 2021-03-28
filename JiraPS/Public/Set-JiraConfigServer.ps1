@@ -1,11 +1,12 @@
 function Set-JiraConfigServer {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [void] )]
     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseShouldProcessForStateChangingFunctions', '')]
     param(
         [Parameter( Mandatory )]
         [ValidateNotNullOrEmpty()]
-        [Alias('Uri')]
+        [Alias('Uri', 'Url')]
         [Uri]
         $Server
     )

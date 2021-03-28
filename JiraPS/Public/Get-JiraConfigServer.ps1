@@ -1,7 +1,7 @@
 function Get-JiraConfigServer {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
-    [OutputType([System.String])]
+    [CmdletBinding( )]
+    [OutputType( [System.String] )]
     param()
 
     begin {
@@ -12,7 +12,7 @@ function Get-JiraConfigServer {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        return ($script:JiraServerUrl -replace "\/$", "")
+        $script:JiraServerUrl -replace "\/$", ""
     }
 
     end {
