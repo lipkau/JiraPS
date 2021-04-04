@@ -92,6 +92,21 @@ namespace AtlassianPS
 
 
         [Serializable]
+        public class ProjectCategory {
+            public ProjectCategory() { }
+
+            public UInt64 Id { get; set; }
+            public String Name { get; set; }
+            public String Description { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString() {
+                return Name;
+            }
+        }
+
+
+        [Serializable]
         public class Role {
             public Role(String value) {
                 Name = value;
