@@ -17,8 +17,7 @@ namespace AtlassianPS
             customer
         }
         [Serializable]
-        public class Avatar
-        {
+        public class Avatar {
             public Uri x16 { get; set; }
             public Uri x24 { get; set; }
             public Uri x32 { get; set; }
