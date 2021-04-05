@@ -1,117 +1,116 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "Get-JiraIssueComment" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-
-        $jiraServer = 'http://jiraserver.example.com'
-        $issueID = 41701
-        $issueKey = 'IT-3676'
-
-        $restResult = @"
+        $commentResponse = @"
 {
     "startAt": 0,
-    "maxResults": 1,
-    "total": 1,
+    "maxResults": 1048576,
+    "total": 2,
     "comments": [
         {
-            "self": "$jiraServer/rest/api/2/issue/$issueID/comment/90730",
-            "id": "90730",
-            "body": "Test comment",
-            "created": "2015-05-01T16:24:38.000-0500",
-            "updated": "2015-05-01T16:24:38.000-0500",
+            "self": "https://powershell.atlassian.net/rest/api/2/issue/10013/comment/10005",
+            "id": "10005",
+            "author": {
+                "emailAddress": "oliver@lipkau.net",
+            },
+            "body": "Joined Sample Sprint 2 1 days 4 hours 10 minutes ago",
+            "updateAuthor": {
+                "emailAddress": "oliver@lipkau.net",
+            },
+            "created": "2017-06-23T04:35:22.145+0200",
+            "updated": "2017-06-23T04:35:22.145+0200",
+            "jsdPublic": true
+        },
+        {
+            "self": "https://powershell.atlassian.net/rest/api/2/issue/10013/comment/10103",
+            "id": "10103",
+            "author": {
+                "emailAddress": "oliver@lipkau.net",
+            },
+            "body": "restricted comment",
+            "updateAuthor": {
+                "emailAddress": "oliver@lipkau.net",
+            },
+            "created": "2021-04-05T20:35:03.838+0200",
+            "updated": "2021-04-05T20:35:03.838+0200",
             "visibility": {
                 "type": "role",
                 "value": "Developers"
-            }
+            },
+            "jsdPublic": true
         }
     ]
 }
 "@
 
         #region Mocks
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+        Add-CommonMocks
 
-        Mock Get-JiraIssue -ModuleName JiraPS {
-            $object = [PSCustomObject] @{
-                ID      = $issueID
-                Key     = $issueKey
-                RestUrl = "$jiraServer/rest/api/latest/issue/$issueID"
-            }
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
-            return $object
-        }
+        Add-MockGetJiraIssue
 
-        Mock Resolve-JiraIssueObject -ModuleName JiraPS {
-            Get-JiraIssue -Key $Issue
-        }
+        Add-MockResolveJiraIssueUrl
 
-        # Obtaining comments from an issue...this is IT-3676 in the test environment
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter {$Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/comment"} {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            (ConvertFrom-Json -InputObject $restResult).comments
-        }
-
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'GET' -and
+            $URI -like '*/issue/41701/comment'
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+            $mockedJiraIssueComment, $mockedJiraIssueComment
         }
         #endregion Mocks
+    }
 
-        #############
-        # Tests
-        #############
-
-        It "Obtains all Jira comments from a Jira issue if the issue key is provided" {
-            $comments = Get-JiraIssueComment -Issue $issueKey
-
-            $comments | Should Not BeNullOrEmpty
-            @($comments).Count | Should Be 1
-            $comments.ID | Should Be 90730
-            $comments.Body | Should Be 'Test comment'
-
-            # Get-JiraIssue should be called to identify the -Issue parameter
-            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
-
-            # Normally, this would be called once in Get-JiraIssue and a second time in Get-JiraIssueComment, but
-            # since we've mocked Get-JiraIssue out, it will only be called once.
-            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+    Describe 'Behavior testing' {
+        BeforeAll {
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                ModuleName  = 'JiraPS'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
+            }
         }
 
-        It "Obtains all Jira comments from a Jira issue if the Jira object is provided" {
-            $issue = Get-JiraIssue -Key $issueKey
-            $comments = Get-JiraIssueComment -Issue $issue
+        It 'Get all comments of an Issue' {
+            Get-JiraIssueComment -Issue 'TEST-001'
 
-            $comments | Should Not BeNullOrEmpty
-            $comments.ID | Should Be 90730
-
-            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+            Assert-MockCalled @assertMockCalledSplat
         }
 
-        It "Handles pipeline input from Get-JiraIssue" {
-            $comments = Get-JiraIssue -Key $issueKey | Get-JiraIssueComment
+        It 'Resolves pagination' {
+            Get-JiraIssueComment -Issue 'TEST-001'
 
-            $comments | Should Not BeNullOrEmpty
-            $comments.ID | Should Be 90730
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter { $Paging -eq $true }
+        }
 
-            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+        It 'Converts results to [AtlassianPS.JiraPS.Comment]' {
+            Get-JiraIssueComment -Issue 'TEST-001'
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter { $OutputType -eq "JiraComment" }
         }
     }
+
+    Describe 'Input testing' {
+        It 'resolves the url of the issue' {
+            Get-JiraIssueComment -Issue 12844
+
+            Assert-MockCalled -CommandName Resolve-JiraIssueUrl -ModuleName 'JiraPS' -Exactly -Times 1 -Scope It
+        }
+
+        It 'accepts all forms of Issue input' {
+            Get-JiraIssueComment -Issue 41701  -ErrorAction Stop
+            Get-JiraIssueComment -Issue 'TEST-001'  -ErrorAction Stop
+            Get-JiraIssueComment -Issue $mockedJiraIssue  -ErrorAction Stop
+        }
+
+        It "allows for the IssueType to be passed over the pipeline" {
+            $mockedJiraIssue | Get-JiraIssueComment -ErrorAction Stop
+        }
+    }
+
+    Describe 'Forming of the request' { }
 }

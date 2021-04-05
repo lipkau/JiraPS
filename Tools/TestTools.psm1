@@ -64,6 +64,41 @@ function Write-MockInfo {
 }
 
 #region Mocked objects
+$mockedJiraIssue = [AtlassianPS.JiraPS.Issue]@{
+    Id      = 41701
+    Key     = 'TEST-001'
+    Fields  = @{ Summary = 'A cool ticket' }
+    RestURL = 'http://jiraserver.example.com/rest/api/latest/issue/41701'
+}
+$mockedJiraIssueComment = [AtlassianPS.JiraPS.Comment]@{
+    Id           = "10103"
+    Body         = "restricted comment"
+    Author       = $mockedJiraServerUser
+    UpdateAuthor = $mockedJiraCloudUser
+    Created      = Get-Date "2021-04-05T20:35:03.838+0200"
+    Updated      = Get-Date "2021-04-05T20:35:03.838+0200"
+    Visibility   = @{
+        type  = "role"
+        value = "Developers"
+    }
+    RestUrl      = "https://powershell.atlassian.net/rest/api/2/issue/10013/comment/10103"
+}
+$mockedJiraServerUser = [AtlassianPS.JiraPS.User]@{
+    Key          = 'fred'
+    Name         = 'Frédéric Chopin'
+    DisplayName  = 'Chopin'
+    EmailAddress = 'chipin@musicschool.pl'
+    Active       = $true
+    RestUrl      = 'http://jiraserver.example.com/rest/api/2/user?username=fred'
+}
+$mockedJiraCloudUser = [AtlassianPS.JiraPS.User]@{
+    AccountId    = 'hannes'
+    Name         = 'Johannes Chrysostomus Wolfgangus Theophilus Mozart'
+    DisplayName  = 'Mozart'
+    EmailAddress = 'mozart@musicschool.at'
+    Active       = $true
+    RestUrl      = 'http://jiraserver.example.com/rest/api/3/user?username=mozart'
+}
 #endregion Mocked objects
 
 #region Mocked Cmdlets

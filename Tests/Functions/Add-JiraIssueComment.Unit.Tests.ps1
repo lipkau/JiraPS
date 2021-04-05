@@ -1,94 +1,124 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
-Describe "Add-JiraIssueComment" -Tag 'Unit' {
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
+Describe 'Add-JiraIssueComment' -Tag 'Unit' {
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-        $issueID = 41701
-        $issueKey = 'IT-3676'
-
-        $restResponse = @"
-{
-    "self": "$jiraServer/rest/api/2/issue/$issueID/comment/90730",
-    "id": "90730",
-    "body": "Test comment",
-    "created": "2015-05-01T16:24:38.000-0500",
-    "updated": "2015-05-01T16:24:38.000-0500"
-}
-"@
-
-        Mock Get-JiraConfigServer {
-            Write-Output $jiraServer
+        $commentResponse = @{
+            restUrl = 'http://jiraserver.example.com/rest/api/2/issue/41701/comment/90730'
+            id      = '90730'
+            body    = 'Test comment'
+            created = '2015-05-01T16:24:38.000-0500'
+            updated = '2015-05-01T16:24:38.000-0500'
         }
 
-        Mock Get-JiraIssue {
-            $object = [PSCustomObject] @{
-                ID      = $issueID
-                Key     = $issueKey
-                RestUrl = "$jiraServer/rest/api/latest/issue/$issueID"
+        #region Mock
+        Add-CommonMocks
+
+        Add-MockGetJiraIssue
+
+        Add-MockResolveJiraIssueUrl
+
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'POST' -and
+            $URI -like '*/issue/*/comment'
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+        }
+        #endregion Mock
+    }
+
+    Describe 'Behavior checking' {
+        BeforeAll {
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
             }
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
-            return $object
         }
 
-        Mock Resolve-JiraIssueObject -ModuleName JiraPS {
-            Get-JiraIssue -Key $Issue
+        It 'Adds a comment to an issue in JIRA' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue 'TEST-001' -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat
         }
 
-        Mock Invoke-JiraMethod -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/comment" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            ConvertFrom-Json $restResponse
+        It 'Adds a comment with restrictions to a Group' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue 'TEST-001' -RestrictToGroup 'Administrators' -ErrorAction Stop
         }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
+        It 'Adds a comment with restrictions to a Role' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue 'TEST-001' -RestrictToRole 'Responsibles' -ErrorAction Stop
         }
 
-        #############
-        # Tests
-        #############
+        It "handles the restriction to 'All Users' gracefully" {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue 'TEST-001' -RestrictToRole 'All Users' -ErrorAction Stop
 
-        It "Adds a comment to an issue in JIRA" {
-            $commentResult = Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $issueKey
-            $commentResult | Should Not BeNullOrEmpty
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -notlike "*`"visibility`":*"
+            }
+        }
+    }
 
-            Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-            Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-            Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -Exactly -Times 1 -Scope It
+    Describe 'Input testing' {
+        It 'resolves the url of the issue' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue 'TEST-001' -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Resolve-JiraIssueUrl -ModuleName 'JiraPS' -Exactly -Times 1 -Scope It
         }
 
-        It "Accepts pipeline input from Get-JiraIssue" {
-            $commentResult = Get-JiraIssue -Key $IssueKey | Add-JiraIssueComment -Comment 'This is a test comment from Pester, using the pipeline!'
-            $commentResult | Should Not BeNullOrEmpty
-
-            Assert-MockCalled 'Get-JiraIssue' -ModuleName JiraPS -Exactly -Times 2 -Scope It
-            Assert-MockCalled 'Resolve-JiraIssueObject' -ModuleName JiraPS -Exactly -Times 1 -Scope It
-            Assert-MockCalled 'Invoke-JiraMethod' -ModuleName JiraPS -Exactly -Times 1 -Scope It
+        It 'accepts Issues over the pipeline' {
+            $mockedJiraIssue | Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -ErrorAction Stop
         }
 
-        Describe "Output checking" {
-            Mock ConvertTo-JiraComment { }
-            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $issueKey | Out-Null
+        It "can't set restrictions for a Role and a Group simulaniouly" {
+            {
+                Add-JiraIssueComment -Comment 'This is a test comment from Pester.' `
+                    -Issue 'TEST-001' `
+                    -RestrictToGroup 'Administrators' `
+                    -RestrictToRole 'Responsibles' `
+                    -ErrorAction Stop
+            } | Should -Throw
+        }
+    }
 
+    Describe 'Forming of the request' {
+        BeforeAll {
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
+            }
+        }
 
-            It "Uses ConvertTo-JiraComment to beautify output" {
-                Assert-MockCalled 'ConvertTo-JiraComment'
+        It 'constructs a valid request for adding a comment' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $mockedJiraIssue -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -eq '{"body":"This is a test comment from Pester."}'
+            }
+        }
+
+        It 'constructs a valid request for adding a comment with role restrictions' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $mockedJiraIssue -RestrictToRole 'Developers'
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                (ConvertFrom-Json $Body).body -eq "This is a test comment from Pester." -and
+                (ConvertFrom-Json $Body).visibility.type -eq "role" -and
+                (ConvertFrom-Json $Body).visibility.value -eq "Developers"
+            }
+        }
+
+        It 'constructs a valid request for adding a comment with group restrictions' {
+            Add-JiraIssueComment -Comment 'This is a test comment from Pester.' -Issue $mockedJiraIssue -RestrictToGroup 'Administrators'
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                (ConvertFrom-Json $Body).body -eq "This is a test comment from Pester." -and
+                (ConvertFrom-Json $Body).visibility.type -eq "group" -and
+                (ConvertFrom-Json $Body).visibility.value -eq "Administrators"
             }
         }
     }

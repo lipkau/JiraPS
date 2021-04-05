@@ -16,7 +16,8 @@ Returns comments on an issue in JIRA.
 ## SYNTAX
 
 ```powershell
-Get-JiraIssueComment [-Issue] <Object> [[-Credential] <PSCredential>] [<CommonParameters>]
+Get-JiraIssueComment [-Issue] <AtlassianPS.JiraPS.Issue>
+[[-Credential] <PSCredential>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -28,7 +29,7 @@ This function obtains comments from existing issues in JIRA.
 ### EXAMPLE 1
 
 ```powershell
-Get-JiraIssueComment -Key TEST-001
+Get-JiraIssueComment -Issue TEST-001
 ```
 
 This example returns all comments posted to issue TEST-001.
@@ -47,17 +48,15 @@ This example illustrates use of the pipeline to return all comments on issue TES
 
 JIRA issue to check for comments.
 
-Can be a `JiraPS.Issue` object, issue key, or internal issue ID.
-
 ```yaml
-Type: Object
+Type: AtlassianPS.JiraPS.Issue
 Parameter Sets: (All)
 Aliases: Key
 
 Required: True
 Position: 1
 Default value: None
-Accept pipeline input: True (ByPropertyName, ByValue)
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
@@ -80,20 +79,23 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
+-InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable,
+-Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### [JiraPS.Issue] / [String]
+### AtlassianPS.JiraPS.Issue
 
 ## OUTPUTS
 
-### [JiraPS.Comment]
+### AtlassianPS.JiraPS.Comment
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 

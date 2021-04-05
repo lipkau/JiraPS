@@ -11,19 +11,37 @@ permalink: /docs/JiraPS/commands/Add-JiraIssueComment/
 
 ## SYNOPSIS
 
-Adds a comment to an existing JIRA issue
+Adds a comment to an existing Issue
 
 ## SYNTAX
 
+### NoRestrictions (Default)
+
 ```powershell
-Add-JiraIssueComment [-Comment] <String> [-Issue] <Object> [[-VisibleRole] <String>]
- [[-Credential] <PSCredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Add-JiraIssueComment [-Comment] <String> [-Issue] <AtlassianPS.JiraPS.Issue>
+[[-Credential] <PSCredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+### RestrictToGroup
+
+```powershell
+Add-JiraIssueComment [-Comment] <String> [-Issue] <AtlassianPS.JiraPS.Issue>
+[-RestrictToGroup] <AtlassianPS.JiraPS.Group> [[-Credential] <PSCredential>]
+[-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+### RestrictToRole
+
+```powershell
+Add-JiraIssueComment [-Comment] <String> [-Issue] <AtlassianPS.JiraPS.Issue>
+[-RestrictToRole] <AtlassianPS.JiraPS.Role> [[-Credential] <PSCredential>]
+[-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
 
-This function adds a comment to an existing issue in JIRA.
-You can optionally set the visibility of the comment (All Users, Developers, or Administrators).
+This function adds a comment to an existing Issue.
+You can optionally set the visibility of the comment to a specific Group or Role.
 
 ## EXAMPLES
 
@@ -63,11 +81,39 @@ Add-JiraIssueComment $comment -Issue TEST-003
 This example illustrates adding a comment based on other logic to a JIRA issue.
 Note the use of `Format-Jira` to convert the output of `Get-Process` into a format that is easily read by users.
 
+### EXAMPLE 5
+
+```powershell
+Add-JiraIssueComment 'restricted comment' -Issue TEST-003 -RestrictToGroup 'Administrators'
+```
+
+Adds a new Comment to the Issue which is restricted so that only members of the
+Group 'Administrators' can see it.
+
+### EXAMPLE 6
+
+```powershell
+$group = Get-JiraUser | Select-Object Groups -First 1
+Add-JiraIssueComment 'restricted comment' -Issue TEST-003 -RestrictToGroup $group
+```
+
+Adds a new comment which is restricted for members of the first group of the User
+running the command.
+
+### EXAMPLE 7
+
+```powershell
+Add-JiraIssueComment 'restricted comment' -Issue TEST-003 -RestrictToRole 'Developer'
+```
+
+Adds a new Comment to the Issue which is restricted so that only members of the
+'Developer' Role can see it.
+
 ## PARAMETERS
 
 ### -Comment
 
-Comment that should be added to JIRA.
+Comment that Should be added to JIRA.
 
 ```yaml
 Type: String
@@ -83,41 +129,48 @@ Accept wildcard characters: False
 
 ### -Issue
 
-Issue that should be commented upon.
-
-Can be a `JiraPS.Issue` object, issue key, or internal issue ID.
+Issue to which to add the comment.
 
 ```yaml
-Type: Object
+Type: AtlassianPS.JiraPS.Issue
 Parameter Sets: (All)
 Aliases: Key
 
 Required: True
 Position: 2
 Default value: None
-Accept pipeline input: True (ByPropertyName, ByValue)
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
-### -VisibleRole
+### -RestrictToGroup
 
-Visibility of the comment.  
-Defines if the comment should be publicly visible, viewable to only developers, or only administrators.
-
-Allowed values are:
-
-- `All Users`
-- `Developers`
-- `Administrators`
+Group to which the visibility of the comment should be set to.
 
 ```yaml
-Type: String
+Type: AtlassianPS.JiraPS.Group
 Parameter Sets: (All)
 Aliases:
 
 Required: False
-Position: 3
-Default value: All Users
+Position: False
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -RestrictToRole
+
+Role to which the visibility of the comment should be set to.
+
+```yaml
+Type: AtlassianPS.JiraPS.Role
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: False
+Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
@@ -174,20 +227,23 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
+-InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable,
+-Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### This function can accept JiraPS.Issue objects via pipeline.
+### AtlassianPS.JiraPS.Issue
 
 ## OUTPUTS
 
-### [JiraPS.Comment]
+### AtlassianPS.JiraPS.Comment
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 

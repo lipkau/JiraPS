@@ -24,6 +24,26 @@ namespace AtlassianPS
             public Uri x48 { get; set; }
         }
 
+        [Serializable]
+        public class Comment {
+            public Comment(String value) {
+                Body = value;
+            }
+            public Comment() { }
+
+            public String Id { get; set; }
+            public String Body { get; set; }
+            public Hashtable Visibility { get; set; }
+            public User Author { get; set; }
+            public User UpdateAuthor { get; set; }
+            public DateTime Created { get; set; }
+            public DateTime Updated { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString() {
+                return Body;
+            }
+        }
 
         [Serializable]
         public class Field
@@ -60,6 +80,29 @@ namespace AtlassianPS
             public Boolean Searchable { get; set; }
             public String[] ClauseNames { get; set; }
             public PSObject Schema { get; set; }
+
+
+        [Serializable]
+        public class Issue {
+            public Issue(UInt64 value) { Id = value; }
+            public Issue(String value) { Key = value; }
+            public Issue() { }
+
+            public UInt64 Id { get; set; }
+            public String Key { get; set; }
+            public Hashtable Fields { get; set; }
+            public Transition[] Transition { get; set; }
+            public String Expand { get; set; }
+            public Uri HttpUrl { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString() {
+                if (Fields != null && Fields.ContainsKey("Summary"))
+                    return "[" + Key + "] " + Fields["Summary"];
+                else
+                    return "[" + Key + "]";
+            }
+        }
 
 
         [Serializable]
@@ -134,6 +177,8 @@ namespace AtlassianPS
             public ActorType Type { get; set; }
         }
 
+        [Serializable]
+        public class Status {
             public Status(UInt64 value) { Id = value; }
             public Status(String value) {
                 UInt64 _id;
@@ -151,15 +196,13 @@ namespace AtlassianPS
             public Uri IconUrl { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString()
-            {
+            public override string ToString() {
                 return Name;
             }
         }
 
         [Serializable]
-        public class StatusCategory
-        {
+        public class StatusCategory {
             public UInt64 Id { get; set; }
             public String Key { get; set; }
             public String Name { get; set; }
@@ -168,12 +211,26 @@ namespace AtlassianPS
         }
 
         [Serializable]
-        public class User
-        {
-            public User(String value)
-            {
-                if (Regex.IsMatch(value, @"\d+:([\da-f]+-){4}[\da-f]+"))
-                {
+        public class Transition {
+            public Transition(UInt64 value) { Id = value; }
+            public Transition(String value) {
+                UInt64 _id;
+                if (UInt64.TryParse(value, out _id))
+                    Id = _id;
+                else
+                    Name = value;
+             }
+            public Transition() { }
+
+            public UInt64 Id { get; set; }
+            public String Name { get; set; }
+            public Status ResultStatus { get; set; }
+
+            public override string ToString() {
+                return Name;
+            }
+        }
+
                     AccountId = value;
                 }
                 else if (Regex.IsMatch(value, @".+\@.+\..{2,}"))

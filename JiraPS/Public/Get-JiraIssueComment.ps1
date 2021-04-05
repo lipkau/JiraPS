@@ -1,31 +1,11 @@
 function Get-JiraIssueComment {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [OutputType( )]
     param(
-        [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Issue" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraIssue'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Issue. Expected [JiraPS.Issue] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
         [Alias('Key')]
-        [Object]
+        [AtlassianPS.JiraPS.Issue]
         $Issue,
 
         [Parameter()]
@@ -42,11 +22,10 @@ function Get-JiraIssueComment {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        # Find the proper object for the Issue
-        $issueObj = Resolve-JiraIssueObject -InputObject $Issue -Credential $Credential
+        $IssueUrl = Resolve-JiraIssueUrl -Issue $Issue
 
         $parameter = @{
-            URI          = "{0}/comment" -f $issueObj.RestURL
+            URI          = "$IssueUrl/comment"
             Method       = "GET"
             GetParameter = @{
                 maxResults = $PageSize

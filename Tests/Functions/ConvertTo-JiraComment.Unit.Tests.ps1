@@ -1,84 +1,111 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertTo-JiraComment" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-        $jiraUsername = 'powershell-test'
-        $jiraUserDisplayName = 'PowerShell Test User'
-        $jiraUserEmail = 'noreply@example.com'
-
-        $commentId = 90730
-        $commentBody = "Test comment"
-
-        $sampleJson = @"
+        $sampleObject = ConvertFrom-Json -InputObject @"
 {
-    "self": "$jiraServer/rest/api/2/issue/41701/comment/90730",
-    "id": "$commentId",
+    "self": "http://jiraserver.example.com/rest/api/2/issue/41701/comment/90730",
+    "id": "90730",
     "author": {
-    "self": "$jiraServer/rest/api/2/user?username=powershell-test",
-    "name": "$jiraUsername",
-    "emailAddress": "$jiraUserEmail",
-    "avatarUrls": {
-        "48x48": "$jiraServer/secure/useravatar?avatarId=10202",
-        "24x24": "$jiraServer/secure/useravatar?size=small&avatarId=10202",
-        "16x16": "$jiraServer/secure/useravatar?size=xsmall&avatarId=10202",
-        "32x32": "$jiraServer/secure/useravatar?size=medium&avatarId=10202"
+        "self": "http://jiraserver.example.com/rest/api/2/user?username=JonDoe",
+        "name": "JonDoe",
+        "emailAddress": "JonDoe@server.com",
+        "avatarUrls": {
+            "48x48": "http://jiraserver.example.com/secure/useravatar?avatarId=10202",
+            "24x24": "http://jiraserver.example.com/secure/useravatar?size=small&avatarId=10202",
+            "16x16": "http://jiraserver.example.com/secure/useravatar?size=xsmall&avatarId=10202",
+            "32x32": "http://jiraserver.example.com/secure/useravatar?size=medium&avatarId=10202"
+        },
+        "displayName": "Doe, Jon",
+        "active": true
     },
-    "displayName": "$jiraUserDisplayName",
-    "active": true
-    },
-    "body": "$commentBody",
+    "body": "Test comment",
     "updateAuthor": {
-    "self": "$jiraServer/rest/api/2/user?username=powershell-test",
-    "name": "powershell-test",
-    "emailAddress": "$jiraUserEmail",
-    "avatarUrls": {
-        "48x48": "$jiraServer/secure/useravatar?avatarId=10202",
-        "24x24": "$jiraServer/secure/useravatar?size=small&avatarId=10202",
-        "16x16": "$jiraServer/secure/useravatar?size=xsmall&avatarId=10202",
-        "32x32": "$jiraServer/secure/useravatar?size=medium&avatarId=10202"
-    },
-    "displayName": "$jiraUserDisplayName",
-    "active": true
+        "self": "http://jiraserver.example.com/rest/api/2/user?username=JonDoe",
+        "name": "JonDoe",
+        "emailAddress": "JonDoe@server.com",
+        "avatarUrls": {
+            "48x48": "http://jiraserver.example.com/secure/useravatar?avatarId=10202",
+            "24x24": "http://jiraserver.example.com/secure/useravatar?size=small&avatarId=10202",
+            "16x16": "http://jiraserver.example.com/secure/useravatar?size=xsmall&avatarId=10202",
+            "32x32": "http://jiraserver.example.com/secure/useravatar?size=medium&avatarId=10202"
+        },
+        "displayName": "Doe, Jon",
+        "active": true
     },
     "created": "2015-05-01T16:24:38.000-0500",
     "updated": "2015-05-01T16:24:38.000-0500",
     "visibility": {
-    "type": "role",
-    "value": "Developers"
+        "type": "role",
+        "value": "Developers"
     }
 }
 "@
+    }
 
-        $sampleObject = ConvertFrom-Json -InputObject $sampleJson
-        $r = ConvertTo-JiraComment -InputObject $sampleObject
-
-        It "Creates a PSObject out of JSON input" {
-            $r | Should Not BeNullOrEmpty
+    Describe "Instanciating an object" {
+        It "Creates a new instance via typed input" {
+            [AtlassianPS.JiraPS.Comment]"My Comment" | Should -BeOfType [AtlassianPS.JiraPS.Comment]
         }
 
-        checkPsType $r 'JiraPS.Comment'
+        It "Creates a new instance via hashtable" {
+            [AtlassianPS.JiraPS.Comment]@{
+                body   = "My Comment"
+                author = $mockedJiraCloudUser
+            } | Should -BeOfType [AtlassianPS.JiraPS.Comment]
+        }
+    }
 
+    Describe "Conversion of InputObject" {
+        BeforeAll {
+            $data = Get-Date
+            Add-MockConvertToJiraUser
+            Mock Get-Date { $date }
 
-        defProp $r 'Id' $commentId
-        defProp $r 'Body' $commentBody
-        defProp $r 'RestUrl' "$jiraServer/rest/api/2/issue/41701/comment/$commentId"
-        defProp $r 'Created' (Get-Date '2015-05-01T16:24:38.000-0500')
-        defProp $r 'Updated' (Get-Date '2015-05-01T16:24:38.000-0500')
+            $comment = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraComment -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "can convert to Comment object" {
+            $comment | Should -HaveCount 1
+        }
+
+        It "returns an object of type [AtlassianPS.JiraPS.Comment]" {
+            $comment | Should -BeOfType [AtlassianPS.JiraPS.Comment]
+        }
+
+        It 'converts nested types' {
+            Assert-MockCalled -CommandName 'ConvertTo-JiraUser' -ModuleName 'JiraPS' -Scope 'Describe' -Exactly -Times 2
+
+            Assert-MockCalled -CommandName 'Get-Date' -ModuleName 'JiraPS' -Scope 'Describe' -Exactly -Times 2
+        }
+    }
+
+    Describe "Return the expected format" {
+        BeforeEach {
+            $commnet = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraComment -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(
+            @{ property = 'Id'; value = 90730 }
+            @{ property = 'Body'; value = 'Test comment' }
+            @{ property = 'RestUrl'; value = 'http://jiraserver.example.com/rest/api/2/issue/41701/comment/90730' }
+            @{ property = 'Created'; value = (Get-Date '2015-05-01T16:24:38.000-0500') }
+            @{ property = 'Updated'; value = (Get-Date '2015-05-01T16:24:38.000-0500') }
+        ) {
+            $commnet.PSObject.Properties.Name | Should -Contain $property
+            if ($value) {
+                $commnet.$property | Should -Be $value
+            }
+            if ($type) {
+                , ($commnet.$property) | Should -BeOfType $type
+            }
+        }
+
+        It "prints nicely to string" {
+            $commnet.ToString() | Should -Be 'Test comment'
+        }
     }
 }
