@@ -1,7 +1,7 @@
 function Convert-Result {
     [CmdletBinding( )]
     param(
-        [Parameter( Mandatory, ValueFromPipeline )]
+        [Parameter( ValueFromPipeline )]
         [Object]
         $InputObject,
 
