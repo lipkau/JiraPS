@@ -1,5 +1,5 @@
 function ConvertTo-JiraStatus {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [OutputType( [AtlassianPS.JiraPS.Status] )]
     param(
         [Parameter( ValueFromPipeline )]

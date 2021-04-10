@@ -1,8 +1,9 @@
 function Get-JiraIssueComment {
     # .ExternalHelp ..\JiraPS-help.xml
-    [OutputType( )]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.Comment] )]
     param(
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
         [Alias('Key')]
         [AtlassianPS.JiraPS.Issue]

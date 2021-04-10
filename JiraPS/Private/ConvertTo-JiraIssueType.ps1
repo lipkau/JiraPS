@@ -1,5 +1,5 @@
 function ConvertTo-JiraIssueType {
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType( [AtlassianPS.JiraPS.IssueType] )]
     param(
         [Parameter( ValueFromPipeline )]

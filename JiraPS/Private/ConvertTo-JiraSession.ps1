@@ -1,5 +1,5 @@
 function ConvertTo-JiraSession {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( Mandatory )]
         [Microsoft.PowerShell.Commands.WebRequestSession]

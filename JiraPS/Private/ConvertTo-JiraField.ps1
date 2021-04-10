@@ -1,5 +1,5 @@
 function ConvertTo-JiraField {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [OutputType( [AtlassianPS.JiraPS.Field] )]
     param(
         [Parameter( ValueFromPipeline )]

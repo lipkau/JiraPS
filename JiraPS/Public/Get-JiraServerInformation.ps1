@@ -1,6 +1,6 @@
 function Get-JiraServerInformation {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter()]
         [System.Management.Automation.PSCredential]

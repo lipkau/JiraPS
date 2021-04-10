@@ -1,6 +1,6 @@
 function Get-JiraRemoteLink {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
         [ValidateNotNullOrEmpty()]
@@ -65,7 +65,7 @@ function Get-JiraRemoteLink {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
             $result = Invoke-JiraMethod @parameter
 
-            Write-Output (ConvertTo-JiraLink -InputObject $result)
+            Write-Output (ConvertTo-JiraRemoteLink -InputObject $result)
         }
     }
 

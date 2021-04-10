@@ -1,5 +1,5 @@
 function ConvertTo-JiraUser {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [OutputType([AtlassianPS.JiraPS.User])]
     param(
         [Parameter( ValueFromPipeline )]
@@ -23,7 +23,7 @@ function ConvertTo-JiraUser {
                     locale,
                     accountType,
                     @{Name = "groups"; Expression = { if ($_.groups) { $_.groups.items.name } else { $null } } },
-                    @{Name = "RestUrl"; Expression = { $_.self } }
+                    @{Name = "RestUrl"; Expression = { $object.self } }
                 )
             )
         }

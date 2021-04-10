@@ -1,5 +1,5 @@
 function ConvertTo-JiraAvatar {
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType([AtlassianPS.JiraPS.Avatar])]
     param(
         [Parameter( ValueFromPipeline )]

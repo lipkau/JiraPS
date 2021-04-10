@@ -1,5 +1,5 @@
 function ConvertTo-JiraRole {
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType([AtlassianPS.JiraPS.Role])]
     param(
         [Parameter( ValueFromPipeline )]

@@ -1,5 +1,5 @@
 function ConvertTo-JiraComment {
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType( [AtlassianPS.JiraPS.Comment] )]
     param(
         [Parameter( ValueFromPipeline )]

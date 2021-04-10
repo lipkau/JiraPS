@@ -1,5 +1,5 @@
 function Resolve-JiraError {
-    [OutputType( )]
+    [CmdletBinding( )]
     param(
         [Parameter( ValueFromPipeline )]
         [Object[]]

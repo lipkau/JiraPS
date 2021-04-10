@@ -1,5 +1,5 @@
 function ConvertTo-JiraProjectCategory {
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType([AtlassianPS.JiraPS.ProjectCategory])]
     param(
         [Parameter( ValueFromPipeline )]

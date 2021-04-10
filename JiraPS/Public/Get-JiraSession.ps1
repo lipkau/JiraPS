@@ -1,6 +1,6 @@
 function Get-JiraSession {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param()
 
     begin {

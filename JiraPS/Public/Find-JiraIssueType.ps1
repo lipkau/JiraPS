@@ -1,6 +1,6 @@
 function Find-JiraIssueType {
     # .ExternalHelp ..\JiraPS-help.xml
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType( [AtlassianPS.JiraPS.IssueType] )]
     param(
         [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
@@ -16,7 +16,7 @@ function Find-JiraIssueType {
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
 
-        $allIssueTypes = Get-JiraFilter -Credential $Credential -ErrorAction Stop
+        $allIssueTypes = Get-JiraIssueType -Credential $Credential -ErrorAction Stop
     }
 
     process {

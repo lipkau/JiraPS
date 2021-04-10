@@ -1,7 +1,7 @@
 function Format-Jira {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
-    [OutputType([System.String])]
+    [CmdletBinding( )]
+    [OutputType( [System.String] )]
     param(
         [Parameter( Mandatory, ValueFromPipeline, ValueFromRemainingArguments )]
         [ValidateNotNull()]

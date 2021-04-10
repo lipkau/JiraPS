@@ -1,7 +1,7 @@
 function Get-JiraIssueAttachmentFile {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
-    [OutputType([Bool])]
+    [CmdletBinding( )]
+    [OutputType( [Bool] )]
     param (
         [Parameter( Mandatory, ValueFromPipeline )]
         [PSTypeName('JiraPS.Attachment')]
@@ -16,7 +16,7 @@ function Get-JiraIssueAttachmentFile {
                         [System.Management.Automation.ErrorCategory]::ObjectNotFound,
                         $_
                     )
-                    $errorItem.ErrorDetails = "Invalid path '$_'."
+                    $errorItem.ErrorDetails = "Invalid path '$_'. It must be a directory which is already created."
                     $PSCmdlet.ThrowTerminatingError($errorItem)
                 }
                 else {
@@ -52,7 +52,7 @@ function Get-JiraIssueAttachmentFile {
             $iwParameters = @{
                 Uri        = $_Attachment.Content
                 Method     = 'Get'
-                Headers    = @{"Accept" = $_Attachment.MimeType}
+                Headers    = @{ "Accept" = $_Attachment.MimeType }
                 OutFile    = $filename
                 Credential = $Credential
             }

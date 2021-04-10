@@ -1,5 +1,5 @@
 function ConvertTo-JiraWorklogItem {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]

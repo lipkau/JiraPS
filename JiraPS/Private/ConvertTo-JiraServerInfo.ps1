@@ -1,5 +1,5 @@
 function ConvertTo-JiraServerInfo {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]

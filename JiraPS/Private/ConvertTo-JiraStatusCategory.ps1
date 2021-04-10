@@ -1,5 +1,5 @@
 function ConvertTo-JiraStatusCategory {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [OutputType( [AtlassianPS.JiraPS.StatusCategory] )]
     param(
         [Parameter( ValueFromPipeline )]

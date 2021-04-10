@@ -12,7 +12,7 @@ function Join-Hashtable {
 
 		Merges the hashtables contained in $Hash1 and $Hash2 into a single hashtable.
 #>
-    [OutputType( )]
+    [CmdletBinding( )]
     [OutputType( [Hashtable] )]
     Param (
         # The tables to merge.

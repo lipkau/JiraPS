@@ -1,13 +1,13 @@
 function Get-JiraIssueEditMetadata {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( Mandatory )]
         [String]
         $Issue,
         <#
           #ToDo:CustomClass
-          Once we have custom classes, this should be a JiraPS.Issue
+          Once we have custom classes, this Should -Be a JiraPS.Issue
         #>
 
         [Parameter()]
