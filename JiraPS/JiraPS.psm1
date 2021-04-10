@@ -1,6 +1,6 @@
 #region Dependencies
 # Load the ConfluencePS namespace from C#
-if (-not ('AtlassianPS.JiraPS.Avatar' -as [Type])) {
+if (-not ('AtlassianPS.JiraPS.Project' -as [Type])) {
     Add-Type -Path (Join-Path $PSScriptRoot JiraPS.Types.cs) -ReferencedAssemblies Microsoft.CSharp, Microsoft.PowerShell.Commands.Utility, System.Management.Automation, System.Text.RegularExpressions, System.Runtime.Extensions, System.Collections
 }
 # if ($PSVersionTable.PSVersion.Major -lt 5) {
@@ -29,6 +29,12 @@ if (-not (Test-Path $script:serverConfig)) {
     $null = New-Item -Path $script:serverConfig -ItemType File -Force
 }
 $script:JiraServerUrl = [Uri](Get-Content $script:serverConfig)
+$PSDefaultParameterValues = @{
+    Disabled                           = $false
+    'ConvertTo-Json:Compress'          = $true
+    'ConvertTo-Json:EnumsAsStrings'    = $true
+    'Resolve-JiraIssueUrl:ErrorAction' = 'Stop'
+}
 
 [String]$script:DefaultContentType = 'application/json; charset=utf-8'
 [UInt32]$script:DefaultPageSize = 25
@@ -45,7 +51,14 @@ $script:PagingContainers = @(
     'values'
     'worklogs'
 )
-$script:SessionTransformationMethod = "ConvertTo-JiraSession"
+$script:SessionTransformationMethod = 'ConvertTo-JiraSession'
+$script:ConversionRules = @{
+    userFields     = @('Assignee', 'Creator', 'Reporter')
+    dateFields     = @('Created', 'LastViewed', 'Updated', 'statuscategorychangedate', 'duedate')
+    timeSpanFields = @('timespent', 'aggregatetimespent', 'timeestimate', 'timeoriginalestimate', 'aggregatetimeestimate')
+    issueFields    = @('Parent', 'subtasks')
+    versionFields  = @('Versions', 'FixVersions')
+}
 #endregion Configuration
 
 #region LoadFunctions

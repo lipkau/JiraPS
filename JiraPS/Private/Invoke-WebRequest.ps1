@@ -6,7 +6,7 @@ function Invoke-WebRequest {
     .ForwardHelpCategory
     Cmdlet
     #>
-    [CmdletBinding(HelpUri = 'https://go.microsoft.com/fwlink/?LinkID=217035')]
+    [CmdletBinding( HelpUri = 'https://go.microsoft.com/fwlink/?LinkID=217035' )]
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
         "PSAvoidOverwritingBuiltInCmdlets",
         "",
@@ -21,7 +21,7 @@ function Invoke-WebRequest {
         [switch]
         ${UseBasicParsing},
 
-        [Parameter(Mandatory = $true, Position = 0)]
+        [Parameter( Position = 0, Mandatory )]
         [ValidateNotNullOrEmpty()]
         [uri]
         ${Uri},
@@ -78,7 +78,7 @@ function Invoke-WebRequest {
         [switch]
         ${ProxyUseDefaultCredentials},
 
-        [Parameter(ValueFromPipeline = $true)]
+        [Parameter( ValueFromPipeline )]
         [System.Object]
         ${Body},
 
@@ -174,17 +174,17 @@ if ($PSVersionTable.PSVersion.Major -ge 6) {
         .ForwardHelpCategory
             Cmdlet
         #>
+        [CmdletBinding( DefaultParameterSetName = 'StandardMethod', HelpUri = 'https://go.microsoft.com/fwlink/?LinkID=217035' )]
         [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
             "PSAvoidOverwritingBuiltInCmdlets",
             "",
             Justification = "Implementing a proxy function"
         )]
-        [CmdletBinding(DefaultParameterSetName = 'StandardMethod', HelpUri = 'https://go.microsoft.com/fwlink/?LinkID=217035')]
         param(
             [switch]
             ${UseBasicParsing},
 
-            [Parameter(Mandatory = $true, Position = 0)]
+            [Parameter( Position = 0, Mandatory )]
             [ValidateNotNullOrEmpty()]
             [uri]
             ${Uri},
@@ -243,40 +243,40 @@ if ($PSVersionTable.PSVersion.Major -ge 6) {
             [int]
             ${MaximumRedirection},
 
-            [Parameter(ParameterSetName = 'StandardMethod')]
-            [Parameter(ParameterSetName = 'StandardMethodNoProxy')]
+            [Parameter( ParameterSetName = 'StandardMethod' )]
+            [Parameter( ParameterSetName = 'StandardMethodNoProxy' )]
             [Microsoft.PowerShell.Commands.WebRequestMethod]
             ${Method},
 
-            [Parameter(ParameterSetName = 'CustomMethod', Mandatory = $true)]
-            [Parameter(ParameterSetName = 'CustomMethodNoProxy', Mandatory = $true)]
+            [Parameter( Mandatory, ParameterSetName = 'CustomMethod' )]
+            [Parameter( Mandatory, ParameterSetName = 'CustomMethodNoProxy' )]
             [Alias('CM')]
             [ValidateNotNullOrEmpty()]
             [string]
             ${CustomMethod},
 
-            [Parameter(ParameterSetName = 'CustomMethodNoProxy', Mandatory = $true)]
-            [Parameter(ParameterSetName = 'StandardMethodNoProxy', Mandatory = $true)]
+            [Parameter( Mandatory, ParameterSetName = 'CustomMethodNoProxy' )]
+            [Parameter( Mandatory, ParameterSetName = 'StandardMethodNoProxy' )]
             [switch]
             ${NoProxy},
 
-            [Parameter(ParameterSetName = 'StandardMethod')]
-            [Parameter(ParameterSetName = 'CustomMethod')]
+            [Parameter( ParameterSetName = 'StandardMethod' )]
+            [Parameter( ParameterSetName = 'CustomMethod' )]
             [uri]
             ${Proxy},
 
-            [Parameter(ParameterSetName = 'StandardMethod')]
-            [Parameter(ParameterSetName = 'CustomMethod')]
+            [Parameter( ParameterSetName = 'StandardMethod' )]
+            [Parameter( ParameterSetName = 'CustomMethod' )]
             [pscredential]
             [System.Management.Automation.CredentialAttribute()]
             ${ProxyCredential},
 
-            [Parameter(ParameterSetName = 'StandardMethod')]
-            [Parameter(ParameterSetName = 'CustomMethod')]
+            [Parameter( ParameterSetName = 'StandardMethod' )]
+            [Parameter( ParameterSetName = 'CustomMethod' )]
             [switch]
             ${ProxyUseDefaultCredentials},
 
-            [Parameter(ValueFromPipeline = $true)]
+            [Parameter( ValueFromPipeline )]
             [System.Object]
             ${Body},
 
