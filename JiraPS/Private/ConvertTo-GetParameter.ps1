@@ -13,12 +13,14 @@ function ConvertTo-GetParameter {
 
     process {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Making HTTP get parameter string out of a hashtable"
-        Write-Verbose ($InputObject | Out-String)
+
         $parameters = New-Object -TypeName System.Collections.ArrayList
+
         foreach ($key in $InputObject.Keys) {
-            $value = $InputObject[$key]
+            $value = ConvertTo-URLEncoded $InputObject[$key]
             $null = $parameters.Add("$key=$value")
         }
+
         "?{0}" -f ($parameters -join "&")
     }
 }

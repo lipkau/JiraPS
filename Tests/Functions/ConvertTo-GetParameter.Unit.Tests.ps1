@@ -15,6 +15,16 @@ Describe "ConvertTo-GetParameter" -Tag 'Unit' {
             $queryString | Should -Be '?pagination=true&page=1&expand=transitions'
         }
 
+        It "url encodes values" {
+            Mock ConvertTo-URLEncoded -ModuleName 'JiraPS' {}
+
+            InModuleScope JiraPS {
+                ConvertTo-GetParameter @{ password = '!"§$% &/()=' }
+            }
+
+            Assert-MockCalled -CommandName 'ConvertTo-URLEncoded' -ModuleName 'JiraPS' -Exactly -Times 1 -Scope 'It'
+        }
+
         It "accepts pipeline input" {
             InModuleScope JiraPS { ConvertTo-GetParameter @{ cool = $true } } | Should -Be '?cool=true'
         }
