@@ -1,5 +1,6 @@
 function ConvertTo-JiraServerInfo {
     [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.ServerInfo] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,28 +8,27 @@ function ConvertTo-JiraServerInfo {
     )
 
     process {
-        foreach ($i in $InputObject) {
+        foreach ($object in $InputObject) {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
 
-            $props = @{
-                'BaseURL'        = $i.baseUrl
-                # With PoSh v6, the version shall be casted to [SemanticVersion]
-                'Version'        = $i.version
-                'DeploymentType' = $i.deploymentType
-                'BuildNumber'    = $i.buildNumber
-                'BuildDate'      = Get-Date $i.buildDate
-                'ServerTime'     = Get-Date $i.serverTime
-                'ScmInfo'        = $i.scmInfo
-                'ServerTitle'    = $i.serverTitle
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.ServerInfo')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "[$($this.DeploymentType)] $($this.Version)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.ServerInfo](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        baseUrl,
+                    # With PoSh v6, the version shall be casted to [SemanticVersion]
+                    version,
+                    deploymentType,
+                    buildNumber,
+                    @{ Name = "BuildDate"; Expression = {
+                            if ($object.buildDate) { Get-Date $object.buildDate } else { $null }
+                        }
+                    },
+                    @{ Name = "ServerTime"; Expression = {
+                            if ($object.serverTime) { Get-Date $object.serverTime } else { $null }
+                        }
+                    },
+                    scmInfo,
+                    serverTitle
+                )
+            )
         }
     }
 }

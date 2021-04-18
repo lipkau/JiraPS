@@ -27,8 +27,12 @@ Describe "ConvertTo-JiraAvatar" -Tag 'Unit' {
 
     Describe "Conversion of InputObject" {
         BeforeAll {
-            $avatar = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraAvatar -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $avatar = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraAvatar -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
+
         It "can convert to Avatar object" {
             $avatar | Should -HaveCount 1
         }
@@ -42,7 +46,10 @@ Describe "ConvertTo-JiraAvatar" -Tag 'Unit' {
 
     Describe "Return the expected format" {
         BeforeEach {
-            $avatar = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraAvatar -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $avatar = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraAvatar -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(

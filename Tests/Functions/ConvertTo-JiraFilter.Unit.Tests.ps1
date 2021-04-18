@@ -1,24 +1,11 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertTo-JiraFilter" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        # Obtained from Atlassian's public JIRA instance
-        $sampleJson = @'
+        $sampleObject = ConvertFrom-Json -InputObject @'
 {
     "self": "https://jira.atlassian.com/rest/api/latest/filter/12844",
     "id": "12844",
@@ -63,121 +50,102 @@ Describe "ConvertTo-JiraFilter" -Tag 'Unit' {
 }
 '@
 
-        $samplePermission = @"
-[
-  {
-    "id": 10000,
-    "type": "global"
-  },
-  {
-    "id": 10010,
-    "type": "project",
-    "project": {
-      "self": "$jiraServer/jira/rest/api/2/project/EX",
-      "id": "10000",
-      "key": "EX",
-      "name": "Example",
-      "avatarUrls": {
-        "48x48": "$jiraServer/jira/secure/projectavatar?size=large&pid=10000",
-        "24x24": "$jiraServer/jira/secure/projectavatar?size=small&pid=10000",
-        "16x16": "$jiraServer/jira/secure/projectavatar?size=xsmall&pid=10000",
-        "32x32": "$jiraServer/jira/secure/projectavatar?size=medium&pid=10000"
-      },
-      "projectCategory": {
-        "self": "$jiraServer/jira/rest/api/2/projectCategory/10000",
-        "id": "10000",
-        "name": "FIRST",
-        "description": "First Project Category"
-      },
-      "simplified": false
+        #region Mocks
+        Add-MockConvertToJiraUser
+        #endregion Mocks
     }
-  },
-  {
-    "id": 10010,
-    "type": "project",
-    "project": {
-      "self": "$jiraServer/jira/rest/api/2/project/MKY",
-      "id": "10002",
-      "key": "MKY",
-      "name": "Example",
-      "avatarUrls": {
-        "48x48": "$jiraServer/jira/secure/projectavatar?size=large&pid=10002",
-        "24x24": "$jiraServer/jira/secure/projectavatar?size=small&pid=10002",
-        "16x16": "$jiraServer/jira/secure/projectavatar?size=xsmall&pid=10002",
-        "32x32": "$jiraServer/jira/secure/projectavatar?size=medium&pid=10002"
-      },
-      "projectCategory": {
-        "self": "$jiraServer/jira/rest/api/2/projectCategory/10000",
-        "id": "10000",
-        "name": "FIRST",
-        "description": "First Project Category"
-      },
-      "simplified": false
-    },
-    "role": {
-      "self": "$jiraServer/jira/rest/api/2/project/MKY/role/10360",
-      "name": "Developers",
-      "id": 10360,
-      "description": "A project role that represents developers in a project",
-      "actors": [
-        {
-          "id": 10240,
-          "displayName": "jira-developers",
-          "type": "atlassian-group-role-actor",
-          "name": "jira-developers"
-        },
-        {
-          "id": 10241,
-          "displayName": "Fred F. User",
-          "type": "atlassian-user-role-actor",
-          "name": "fred"
+
+    Describe "Instanciating an object" {
+        It "Creates a new instance via typed input" {
+            $filter1 = [AtlassianPS.JiraPS.Filter]"1001"
+            $filter2 = [AtlassianPS.JiraPS.Filter]100100
+            $filter3 = [AtlassianPS.JiraPS.Filter]"My Filter"
+
+            $filter1, $filter2, $filter3 | Should -BeOfType [AtlassianPS.JiraPS.Filter]
+
+            $filter1.Id | Should -Be 1001
+            $filter1.Name | Should -Be $null
+
+            $filter2.Id | Should -Be 100100
+            $filter2.Name | Should -Be $null
+
+            $filter3.Id | Should -Be 0
+            $filter3.Name | Should -Be 'My Filter'
+
         }
-      ]
+
+        It "Creates a new instance via hashtable" {
+            [AtlassianPS.JiraPS.Filter]@{
+                Id    = '10001'
+                Name  = 'My Filter'
+                Owner = $mockedJiraCloudUser
+            } | Should -BeOfType [AtlassianPS.JiraPS.Filter]
+        }
     }
-  },
-  {
-    "id": 10010,
-    "type": "group",
-    "group": {
-      "name": "jira-administrators",
-      "self": "$jiraServer/jira/rest/api/2/group?groupname=jira-administrators"
+
+    Describe "Conversion of InputObject" {
+        BeforeAll {
+            $filter = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraFilter -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "can convert to Filter object" {
+            $filter | Should -HaveCount 1
+        }
+
+        It "returns an object of type [AtlassianPS.JiraPS.Filter]" {
+            $filter | Should -BeOfType [AtlassianPS.JiraPS.Filter]
+        }
+
+        It 'converts nested types' {
+            Assert-MockCalled -CommandName 'ConvertTo-JiraUser' -ModuleName 'JiraPS' -Scope 'Describe' -Exactly -Times 1
+        }
     }
-  }
-]
-"@
 
-        Mock ConvertTo-JiraFilterPermission -ModuleName JiraPS {
-            $i = New-Object -TypeName PSCustomObject -Property @{ Id = 1111 }
-            $i.PSObject.TypeNames.Insert(0, 'JiraPS.FilterPermission')
-            $i
+    Describe "Return the expected format" {
+        BeforeEach {
+            $filter = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraFilter -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
-        $sampleObject = ConvertFrom-Json -InputObject $sampleJson
-        $r = ConvertTo-JiraFilter -InputObject $sampleObject -FilterPermission $samplePermission
-
-        It "Creates a PSObject out of JSON input" {
-            $r | Should Not BeNullOrEmpty
+        It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(
+            @{ property = 'Id'; value = '12844' }
+            @{ property = 'Name'; value = 'All JIRA Bugs' }
+            @{ property = 'Owner'; type = 'AtlassianPS.JiraPS.User' }
+            @{ property = 'JQL'; value = 'project = 10240 AND issuetype = 1 ORDER BY key DESC' }
+            @{ property = 'Favorite'; value = $false; type = 'Boolean' }
+            @{ property = 'Favourite'; value = $false; type = 'Boolean' }
+            @{ property = 'SharePermissions'; type = 'AtlassianPS.JiraPS.FilterPermission[]' }
+            @{ property = 'ViewUrl'; value = 'https://jira.atlassian.com/secure/IssueNavigator.jspa?mode=hide&requestId=12844' }
+            @{ property = 'SearchUrl'; value = 'https://jira.atlassian.com/rest/api/latest/search?jql=project+%3D+10240+AND+issuetype+%3D+1+ORDER+BY+key+DESC' }
+            @{ property = 'RestUrl'; value = 'https://jira.atlassian.com/rest/api/latest/filter/12844' }
+        ) {
+            $filter.PSObject.Properties.Name | Should -Contain $property
+            if ($value) {
+                $filter.$property | Should -Be $value
+            }
+            if ($type) {
+                , ($filter.$property) | Should -BeOfType $type
+            }
         }
 
-        checkPsType $r 'JiraPS.Filter'
+        It "prints nicely to string" {
+            $filter1 = [AtlassianPS.JiraPS.Filter]"1001"
+            $filter2 = [AtlassianPS.JiraPS.Filter]100100
+            $filter3 = [AtlassianPS.JiraPS.Filter]"My Filter"
+            $filter4 = [AtlassianPS.JiraPS.Filter]@{
+                Id   = 1000
+                Name = 'My Filter'
+            }
 
-        defProp $r 'Id' 12844
-        defProp $r 'Name' 'All JIRA Bugs'
-        defProp $r 'JQL' 'project = 10240 AND issuetype = 1 ORDER BY key DESC'
-        defProp $r 'RestUrl' 'https://jira.atlassian.com/rest/api/latest/filter/12844'
-        defProp $r 'ViewUrl' 'https://jira.atlassian.com/secure/IssueNavigator.jspa?mode=hide&requestId=12844'
-        defProp $r 'SearchUrl' 'https://jira.atlassian.com/rest/api/latest/search?jql=project+%3D+10240+AND+issuetype+%3D+1+ORDER+BY+key+DESC'
-        defProp $r 'Favourite' $false
-        It "Defines the 'Favorite' property as an alias of 'Favourite'" {
-            ($r | Get-Member -Name Favorite).MemberType | Should -Be "AliasProperty"
-        }
-
-        It "Uses output type of 'JiraPS.FilterPermission' for property 'FilterPermissions'" {
-            checkType $r.FilterPermissions 'JiraPS.FilterPermission'
-        }
-
-        It "uses ConvertTo-JiraFilterPermission" {
-            Assert-MockCalled -CommandName ConvertTo-JiraFilterPermission -Module JiraPS -Exactly -Times 1 -Scope Describe
+            $filter1.ToString() | Should -Be 'id: 1001'
+            $filter2.ToString() | Should -Be 'id: 100100'
+            $filter3.ToString() | Should -Be 'My Filter'
+            $filter4.ToString() | Should -Be 'My Filter'
         }
     }
 }

@@ -6,28 +6,40 @@ using Microsoft.PowerShell.Commands;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 
-namespace AtlassianPS {
-    namespace JiraPS {
-        public enum AccountType {
+namespace AtlassianPS
+{
+    public enum DeploymentType
+    {
+        Cloud,
+        Server
+    }
+
+    namespace JiraPS
+    {
+        public enum AccountType
+        {
             // https://developer.atlassian.com/cloud/jira/platform/deprecation-notice-user-privacy-api-migration-guide/#webhooks
             atlassian,
             app,
             customer
         }
 
-        public enum ActorType {
+        public enum ActorType
+        {
             AtlassianUserRoleActor,
             AtlassianGroupRoleActor
         }
 
-        public enum AssigneeType {
+        public enum AssigneeType
+        {
             PROJECT_DEFAULT,
             COMPONENT_LEAD,
             PROJECT_LEAD,
             UNASSIGNED
         }
 
-        public enum FilterShareType {
+        public enum FilterShareType
+        {
             GLOBAL,
             LOGGEDIN,
             PROJECT,
@@ -36,7 +48,8 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class Attachment {
+        public class Attachment
+        {
             public String ID { get; set; }
             public String FileName { get; set; }
             public User Author { get; set; }
@@ -47,13 +60,15 @@ namespace AtlassianPS {
             public String Thumbnail { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return FileName;
             }
         }
 
         [Serializable]
-        public class Avatar {
+        public class Avatar
+        {
             public Uri x16 { get; set; }
             public Uri x24 { get; set; }
             public Uri x32 { get; set; }
@@ -61,8 +76,10 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class Comment {
-            public Comment(String value) {
+        public class Comment
+        {
+            public Comment(String value)
+            {
                 Body = value;
             }
             public Comment() { }
@@ -76,14 +93,17 @@ namespace AtlassianPS {
             public DateTime Updated { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Body;
             }
         }
 
         [Serializable]
-        public class Component {
-            public Component(String value) {
+        public class Component
+        {
+            public Component(String value)
+            {
                 Name = value;
             }
             public Component() { }
@@ -100,21 +120,26 @@ namespace AtlassianPS {
             public Project Project { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class Field {
-            public Field(String value) {
+        public class Field
+        {
+            public Field(String value)
+            {
                 if (value.Contains(" "))
                     Name = value;
-                else if (value.ToLower() == value) {
+                else if (value.ToLower() == value)
+                {
                     Id = value;
                     Key = value;
                 }
-                else if (value.ToLower().Contains("customfield_")) {
+                else if (value.ToLower().Contains("customfield_"))
+                {
                     Id = value.ToLower();
                     Key = value.ToLower();
                 }
@@ -133,17 +158,20 @@ namespace AtlassianPS {
             public String[] ClauseNames { get; set; }
             public PSObject Schema { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name ?? "id: " + Id;
             }
         }
 
         [Serializable]
-        public class Filter {
+        public class Filter
+        {
             private Boolean _favorite;
 
             public Filter(UInt64 value) { Id = value; }
-            public Filter(String value) {
+            public Filter(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
@@ -164,13 +192,15 @@ namespace AtlassianPS {
             public Uri ViewUrl { get; set; }
             public Uri SearchUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name ?? "id: " + Id;
             }
         }
 
         [Serializable]
-        public class FilterPermission {
+        public class FilterPermission
+        {
             public FilterPermission() { }
 
             public UInt64 Id { get; set; }
@@ -185,7 +215,8 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class Group {
+        public class Group
+        {
             public Group(String value) { Name = value; }
             public Group() { }
 
@@ -194,13 +225,15 @@ namespace AtlassianPS {
             public User[] Member { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class Issue {
+        public class Issue
+        {
             public Issue(UInt64 value) { Id = value; }
             public Issue(String value) { Key = value; }
             public Issue() { }
@@ -209,11 +242,12 @@ namespace AtlassianPS {
             public String Key { get; set; }
             public Hashtable Fields { get; set; }
             public Transition[] Transition { get; set; }
-            public String Expand { get; set; }
+            public String[] Expand { get; set; }
             public Uri HttpUrl { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 if (Fields != null && Fields.ContainsKey("Summary"))
                     return "[" + Key + "] " + Fields["Summary"];
                 else
@@ -222,7 +256,8 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class IssueLink {
+        public class IssueLink
+        {
             public IssueLink() { }
 
             public UInt64 Id { get; set; }
@@ -231,13 +266,15 @@ namespace AtlassianPS {
             public Issue InwardIssue { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return "Id: " + Id;
             }
         }
 
         [Serializable]
-        public class IssueLinkType {
+        public class IssueLinkType
+        {
             public IssueLinkType() { }
 
             public String Id { get; set; }
@@ -245,21 +282,24 @@ namespace AtlassianPS {
             public String InwardText { get; set; }
             public String OutwardText { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class IssueType {
+        public class IssueType
+        {
             public IssueType(UInt64 value) { Id = value; }
-            public IssueType(String value) {
+            public IssueType(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
                 else
                     Name = value;
-             }
+            }
             public IssueType() { }
 
             public UInt64 Id { get; set; }
@@ -269,15 +309,18 @@ namespace AtlassianPS {
             public Uri IconUrl { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name ?? "id: " + Id;
             }
         }
 
         [Serializable]
-        public class Priority {
+        public class Priority
+        {
             public Priority(UInt64 value) { Id = value; }
-            public Priority(String value) {
+            public Priority(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
@@ -292,20 +335,24 @@ namespace AtlassianPS {
             public String StatusColor { get; set; }
             public Boolean IsSubtask { get; set; }
             public Nullable<Int16> AvatarId { get; set; }
-            public Nullable<Int16> EntityId  { get; set; }
+            public Nullable<Int16> EntityId { get; set; }
             public Nullable<Int16> HierarchyLevel { get; set; }
             // TODO:  public Scope Scope { get; set; }
             public Uri IconUrl { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name ?? "id: " + Id;
             }
         }
 
         [Serializable]
-        public class Project { public Project(UInt64 value) { Id = value; }
-            public Project(String value) {
+        public class Project
+        {
+            public Project(UInt64 value) { Id = value; }
+            public Project(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
@@ -327,12 +374,13 @@ namespace AtlassianPS {
             public Uri HttpUrl { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
-                if (String.IsNullOrEmpty(Name))
+            public override string ToString()
+            {
+                if (!String.IsNullOrEmpty(Name))
                     return Name;
-                else if (String.IsNullOrEmpty(Key))
+                else if (!String.IsNullOrEmpty(Key))
                     return "key: " + Key;
-                else if (String.IsNullOrEmpty(Id.ToString()))
+                else if (!String.IsNullOrEmpty(Id.ToString()))
                     return "id: " + Id;
                 else
                     return "";
@@ -340,7 +388,8 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class ProjectCategory {
+        public class ProjectCategory
+        {
             public ProjectCategory() { }
 
             public UInt64 Id { get; set; }
@@ -348,23 +397,26 @@ namespace AtlassianPS {
             public String Description { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class RemoteIssueLink {
+        public class RemoteIssueLink
+        {
             public UInt32 Id { get; set; }
             public String GlobalId { get; set; }
-            public Dictionary<String, String> Application { get; set; }
+            public Hashtable Application { get; set; }
             public String Relationship { get; set; }
             public RemoteObject Object { get; set; }
             public Uri RestUrl { get; set; }
         }
 
         [Serializable]
-        public class RemoteObject {
+        public class RemoteObject
+        {
             public Uri Url { get; set; }
             public String Title { get; set; }
             public String Summary { get; set; }
@@ -373,8 +425,10 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class Role {
-            public Role(String value) {
+        public class Role
+        {
+            public Role(String value)
+            {
                 Name = value;
             }
             public Role() { }
@@ -385,13 +439,15 @@ namespace AtlassianPS {
             public RoleActor[] Actors { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class RoleActor {
+        public class RoleActor
+        {
             public RoleActor() { }
 
             public UInt64 Id { get; set; }
@@ -401,15 +457,42 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class Status {
+        public class ServerInfo
+        {
+            public Uri BaseURL { get; set; }
+            public String Version { get; set; }
+            public DeploymentType DeploymentType { get; set; }
+            public UInt32 BuildNumber { get; set; }
+            public DateTime BuildDate { get; set; }
+            public DateTime ServerTime { get; set; }
+            public String ScmInfo { get; set; }
+            public String ServerTitle { get; set; }
+
+            public override string ToString()
+            {
+                return ServerTitle + " <" + BaseURL + "> v" + Version + " [" + DeploymentType + "]";
+            }
+        }
+
+        [Serializable]
+        public class Session
+        {
+            public String Username { get; set; }
+            public WebRequestSession WebSession { get; set; }
+        }
+
+        [Serializable]
+        public class Status
+        {
             public Status(UInt64 value) { Id = value; }
-            public Status(String value) {
+            public Status(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
                 else
                     Name = value;
-             }
+            }
             public Status() { }
 
             public UInt64 Id { get; set; }
@@ -419,13 +502,15 @@ namespace AtlassianPS {
             public Uri IconUrl { get; set; }
             public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class StatusCategory {
+        public class StatusCategory
+        {
             public UInt64 Id { get; set; }
             public String Key { get; set; }
             public String Name { get; set; }
@@ -434,34 +519,41 @@ namespace AtlassianPS {
         }
 
         [Serializable]
-        public class Transition {
+        public class Transition
+        {
             public Transition(UInt64 value) { Id = value; }
-            public Transition(String value) {
+            public Transition(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
                 else
                     Name = value;
-             }
+            }
             public Transition() { }
 
             public UInt64 Id { get; set; }
             public String Name { get; set; }
             public Status ResultStatus { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
             }
         }
 
         [Serializable]
-        public class User {
-            public User(String value) {
-                if (value == "Unassigned") {
+        public class User
+        {
+            public User(String value)
+            {
+                if (value == "Unassigned")
+                {
                     Key = "";
                     DisplayName = "Unassigned";
                 }
-                else if (value == "Default") {
+                else if (value == "Default")
+                {
                     Key = "-1";
                     DisplayName = "Default Assignee";
                 }
@@ -497,25 +589,28 @@ namespace AtlassianPS {
                     return null;
             }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return DisplayName ?? Name ?? EmailAddress ?? Key ?? AccountId;
             }
         }
 
         [Serializable]
-        public class Version {
+        public class Version
+        {
             public Version(UInt64 value) { Id = value; }
-            public Version(String value) {
+            public Version(String value)
+            {
                 UInt64 _id;
                 if (UInt64.TryParse(value, out _id))
                     Id = _id;
                 else
                     Name = value;
-             }
+            }
             public Version() { }
 
             public UInt64 Id { get; set; }
-            public UInt64 ProjectId { get; set; }
+            public Project Project { get; set; }
             public String Name { get; set; }
             public String Description { get; set; }
             public Boolean Archived { get; set; }
@@ -523,10 +618,33 @@ namespace AtlassianPS {
             public Nullable<DateTime> StartDate { get; set; }
             public Nullable<DateTime> ReleaseDate { get; set; }
             public Boolean Overdue { get; set; }
-            public String RestUrl { get; set; }
+            public Uri RestUrl { get; set; }
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return Name;
+            }
+        }
+
+        [Serializable]
+        public class WorklogItem
+        {
+            public UInt64 Id { get; set; }
+            public Issue Issue { get; set; }
+            public String Comment { get; set; }
+            public Hashtable Visibility { get; set; }
+            public User Author { get; set; }
+            public User UpdateAuthor { get; set; }
+            public DateTime Created { get; set; }
+            public DateTime Updated { get; set; }
+            public DateTime Started { get; set; }
+            public String TimeSpent { get; set; }
+            public UInt32 TimeSpentSeconds { get; set; }
+            public Uri RestUrl { get; set; }
+
+            public override string ToString()
+            {
+                return "id: " + Id;
             }
         }
     }

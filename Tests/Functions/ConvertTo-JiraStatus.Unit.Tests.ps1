@@ -21,6 +21,10 @@ Describe "ConvertTo-JiraStatus" -Tag 'Unit' {
     }
 }
 "@
+
+        #region Mocks
+        Mock ConvertTo-JiraStatusCategory -ModuleName 'JiraPS' { [AtlassianPS.JiraPS.StatusCategory]@{} }
+        #endregion Mocks
     }
 
     Describe "Instanciating an object" {
@@ -40,9 +44,10 @@ Describe "ConvertTo-JiraStatus" -Tag 'Unit' {
 
     Describe "Conversion of InputObject" {
         BeforeAll {
-            Mock ConvertTo-JiraStatusCategory -ModuleName 'JiraPS' { [AtlassianPS.JiraPS.StatusCategory]@{} }
-
-            $status = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraStatus -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $status = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraStatus -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "can convert to Status object" {
@@ -60,7 +65,10 @@ Describe "ConvertTo-JiraStatus" -Tag 'Unit' {
 
     Describe "Return the expected format" {
         BeforeEach {
-            $status = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraStatus -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $status = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraStatus -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(

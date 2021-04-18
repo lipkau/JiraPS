@@ -1,5 +1,6 @@
 function ConvertTo-JiraIssueLink {
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.IssueLink] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,29 +8,29 @@ function ConvertTo-JiraIssueLink {
     )
 
     process {
-        foreach ($i in $InputObject) {
+        foreach ($object in $InputObject) {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
 
-            $props = @{
-                'ID'   = $i.id
-                'Type' = ConvertTo-JiraIssueLinkType $i.type
-            }
-
-            if ($i.inwardIssue) {
-                $props['InwardIssue'] = ConvertTo-JiraIssue $i.inwardIssue
-            }
-
-            if ($i.outwardIssue) {
-                $props['OutwardIssue'] = ConvertTo-JiraIssue $i.outwardIssue
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.IssueLink')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.ID)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.IssueLink](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        id,
+                    @{ Name = "Type"; Expression = {
+                            = (ConvertTo-JiraIssueLinkType -InputObject $object.type) ?? $null
+                        }
+                    },
+                    @{ Name = "InwardIssue"; Expression = {
+                            = (ConvertTo-JiraIssue -InputObject $object.inwardIssue) ?? $null
+                        }
+                    },
+                    @{ Name = "OutwardIssue"; Expression = {
+                            = (ConvertTo-JiraIssue -InputObject $object.outwardIssue) ?? $null
+                        }
+                    },
+                    @{ Name = "RestUrl"; Expression = {
+                            = $object.self ?? $null
+                        }
+                    }
+                )
+            )
         }
     }
 }

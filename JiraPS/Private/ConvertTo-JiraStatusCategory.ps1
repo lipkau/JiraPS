@@ -17,7 +17,7 @@ function ConvertTo-JiraStatusCategory {
                     name,
                     colorName,
                     @{ Name = "RestUrl"; Expression = {
-                            if ($object.self) { $object.self } else { $null }
+                            = $object.self ?? $null
                         }
                     }
                 )

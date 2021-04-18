@@ -1,5 +1,6 @@
 function ConvertTo-JiraProject {
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.Project] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,39 +8,47 @@ function ConvertTo-JiraProject {
     )
 
     process {
-        foreach ($i in $InputObject) {
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
+        foreach ($object in $InputObject) {
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$object to custom object"
 
-            $props = @{
-                'ID'          = $i.id
-                'Key'         = $i.key
-                'Name'        = $i.name
-                'Description' = $i.description
-                'Lead'        = ConvertTo-JiraUser $i.lead
-                'IssueTypes'  = ConvertTo-JiraIssueType $i.issueTypes
-                'Roles'       = $i.roles
-                'RestUrl'     = $i.self
-                'Components'  = $i.components
-                'Style'       = $i.style
-            }
-
-            if ($i.projectCategory) {
-                $props.Category = $i.projectCategory
-            }
-            elseif ($i.Category) {
-                $props.Category = $i.Category
-            }
-            else {
-                $props.Category = $null
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.Name)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.Project](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        id,
+                    Key,
+                    name,
+                    description,
+                    @{ Name = "Lead"; Expression = {
+                            = (ConvertTo-JiraUser $object.lead) ?? $null
+                        }
+                    },
+                    @{ Name = "IssueTypes"; Expression = {
+                            = (ConvertTo-JiraIssueType $object.issuetypes) ?? $null
+                        }
+                    },
+                    @{ Name = "Roles"; Expression = {
+                            = (ConvertTo-JiraRole $object.roles) ?? $null
+                        }
+                    },
+                    @{ Name = "Components"; Expression = {
+                            = (ConvertTo-JiraComponent $object.components) ?? $null
+                        }
+                    },
+                    style,
+                    @{ Name = 'Category'; Expression = {
+                            if ($object.category) { ConvertTo-JiraProjectCategory $object.category }
+                            elseif ($object.projectCategory) { ConvertTo-JiraProjectCategory $object.projectCategory }
+                            else { $null }
+                        }
+                    },
+                    @{ Name = 'HttpUrl'; Expression = {
+                            = $object.url ?? $null
+                        }
+                    },
+                    @{ Name = 'RestUrl'; Expression = {
+                            = $object.self ?? $null
+                        }
+                    }
+                )
+            )
         }
     }
 }

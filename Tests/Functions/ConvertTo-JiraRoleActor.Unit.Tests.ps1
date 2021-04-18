@@ -45,7 +45,10 @@ Describe "ConvertTo-JiraRoleActor" -Tag 'Unit' {
 
     Describe "Conversion of InputObject" {
         BeforeAll {
-            $roleActor = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraRoleActor -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $roleActor = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraRoleActor -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "can convert to RoleActor object" {
@@ -61,7 +64,10 @@ Describe "ConvertTo-JiraRoleActor" -Tag 'Unit' {
 
     Describe "Return the expected format" {
         BeforeEach {
-            $roleActor = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraRoleActor -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $roleActor = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraRoleActor -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(

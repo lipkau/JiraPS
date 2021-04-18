@@ -18,7 +18,7 @@ function ConvertTo-JiraIssueType {
                     iconUrl,
                     @{ Name = "Subtask"; Expression = { [System.Convert]::ToBoolean($i.subtask) } },
                     @{ Name = "RestUrl"; Expression = {
-                            if ($object.self) { $object.self } else { $null }
+                            = $object.self ?? $null
                         }
                     }
                 )

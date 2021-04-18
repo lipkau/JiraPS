@@ -1,5 +1,6 @@
 function ConvertTo-JiraPriority {
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.Priority] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,25 +8,28 @@ function ConvertTo-JiraPriority {
     )
 
     process {
-        foreach ($i in $InputObject) {
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
+        foreach ($object in $InputObject) {
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$object to custom object"
 
-            $props = @{
-                'ID'          = $i.id
-                'Name'        = $i.name
-                'Description' = $i.description
-                'StatusColor' = $i.statusColor
-                'IconUrl'     = $i.iconUrl
-                'RestUrl'     = $i.self
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.Priority')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.Name)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.Priority](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        id,
+                    name,
+                    description,
+                    StatusColor,
+                    @{ Name = 'IsSubtask'; Expression = { [System.Convert]::ToBoolean($object.subtask) } },
+                    @{ Name = 'AvatarId'; Expression = { [Int]$object.AvatarId } },
+                    @{ Name = 'EntityId'; Expression = { [Int]$object.EntityId } },
+                    @{ Name = 'HierarchyLevel'; Expression = { [Int]$object.HierarchyLevel } },
+                    @{ Name = 'IconUrl'; Expression = {
+                            = $object.IconUrl ?? $null
+                        }
+                    },
+                    @{ Name = 'RestUrl'; Expression = {
+                            = $object.self ?? $null
+                        }
+                    }
+                )
+            )
         }
     }
 }

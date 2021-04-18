@@ -1,55 +1,93 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertTo-JiraServerInfo" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $sampleJson = @"
+        $sampleObject = ConvertFrom-Json -InputObject @"
 {
-    "baseUrl":"$jiraServer",
-    "version":"1000.1323.0",
-    "versionNumbers":[1000,1323,0],
-    "deploymentType":"Cloud",
-    "buildNumber":100062,
-    "buildDate":"2017-09-26T00:00:00.000+0200",
-    "serverTime":"2017-09-27T09:59:25.520+0200",
-    "scmInfo":"f3c60100df073e3576f9741fb7a3dc759b416fde",
-    "serverTitle":"JIRA"
+    "baseUrl": "https://powershell.atlassian.net",
+    "version": "1001.0.0-SNAPSHOT",
+    "versionNumbers": [
+        1001,
+        0,
+        0
+    ],
+    "deploymentType": "Cloud",
+    "buildNumber": 100156,
+    "buildDate": "2021-04-08T13:31:02.000+0200",
+    "serverTime": "2021-04-11T12:47:54.115+0200",
+    "scmInfo": "ef0510686cf40db0fbe60fe0292e60df05ead372",
+    "serverTitle": "JIRA",
+    "defaultLocale": {
+        "locale": "en_US"
+    }
 }
 "@
+    }
 
-        $sampleObject = ConvertFrom-Json -InputObject $sampleJson
-        $r = ConvertTo-JiraServerInfo -InputObject $sampleObject
+    Describe "Instanciating an object" {
+        It "Creates a new instance via typed input" { }
 
-        It "Creates a PSObject out of JSON input" {
-            $r | Should Not BeNullOrEmpty
+        It "Creates a new instance via hashtable" {
+            [AtlassianPS.JiraPS.ServerInfo]@{
+                BaseUrl        = "https://powershell.atlassian.net"
+                Version        = "1001.0.0-SNAPSHOT"
+                DeploymentType = "Cloud"
+                ServerTitle    = "JIRA"
+            } | Should -BeOfType [AtlassianPS.JiraPS.ServerInfo]
+        }
+    }
+
+    Describe "Conversion of InputObject" {
+        BeforeAll {
+            $serverInfo = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraServerInfo -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
-        checkPsType $r 'JiraPS.ServerInfo'
+        It "can convert to ServerInfo object" {
+            $serverInfo | Should -HaveCount 1
+        }
 
+        It "returns an object of type [AtlassianPS.JiraPS.ServerInfo]" {
+            $serverInfo | Should -BeOfType [AtlassianPS.JiraPS.ServerInfo]
+        }
 
-        defProp $r 'BaseURL' $jiraServer
-        defProp $r 'Version' ([Version]"1000.1323.0")
-        defProp $r 'DeploymentType' "Cloud"
-        defProp $r 'BuildNumber' 100062
-        defProp $r 'BuildDate' (Get-Date '2017-09-26T00:00:00.000+0200')
-        defProp $r 'ServerTime' (Get-Date '2017-09-27T09:59:25.520+0200')
-        defProp $r 'ScmInfo' "f3c60100df073e3576f9741fb7a3dc759b416fde"
-        defProp $r 'ServerTitle' "JIRA"
+        It 'converts nested types' { }
+    }
+
+    Describe "Return the expected format" {
+        BeforeEach {
+            $serverInfo = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraServerInfo -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(
+            @{ property = 'BaseURL'; value = 'https://powershell.atlassian.net/' }
+            @{ property = 'Version'; value = '1001.0.0-SNAPSHOT' }
+            @{ property = 'DeploymentType'; value = 'Cloud'; type = 'AtlassianPS.DeploymentType' }
+            @{ property = 'BuildNumber'; value = '100156' }
+            @{ property = 'BuildDate'; type = 'DateTime' }
+            @{ property = 'ServerTime'; type = 'DateTime' }
+            @{ property = 'ScmInfo'; value = 'ef0510686cf40db0fbe60fe0292e60df05ead372' }
+            @{ property = 'ServerTitle'; value = 'JIRA' }
+        ) {
+            $serverInfo.PSObject.Properties.Name | Should -Contain $property
+            if ($value) {
+                $serverInfo.$property | Should -Be $value
+            }
+            if ($type) {
+                , ($serverInfo.$property) | Should -BeOfType $type
+            }
+        }
+
+        It "prints nicely to string" {
+            $serverInfo.ToString() | Should -Be 'JIRA <https://powershell.atlassian.net/> v1001.0.0-SNAPSHOT [Cloud]'
+        }
     }
 }

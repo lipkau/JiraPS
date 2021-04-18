@@ -1,6 +1,6 @@
 function ConvertTo-JiraUser {
     [CmdletBinding( )]
-    [OutputType([AtlassianPS.JiraPS.User])]
+    [OutputType( [AtlassianPS.JiraPS.User] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -17,13 +17,22 @@ function ConvertTo-JiraUser {
                     name,
                     displayName,
                     emailAddress,
-                    @{Name = "active"; Expression = { [System.Convert]::ToBoolean($_.active) } },
-                    @{Name = "avatar"; Expression = { ConvertTo-JiraAvatar $_.avatarUrls } },
+                    @{ Name = "active"; Expression = { [System.Convert]::ToBoolean($_.active) } },
+                    @{ Name = "avatar"; Expression = {
+                            = (ConvertTo-JiraAvatar -InputObject $_.avatarUrls) ?? $null
+                        }
+                    },
                     timeZone,
                     locale,
                     accountType,
-                    @{Name = "groups"; Expression = { if ($_.groups) { $_.groups.items.name } else { $null } } },
-                    @{Name = "RestUrl"; Expression = { $object.self } }
+                    @{ Name = "groups"; Expression = {
+                            if ($_.groups) { $_.groups.items.name } else { $null }
+                        }
+                    },
+                    @{ Name = "RestUrl"; Expression = {
+                            = $object.self ?? $null
+                        }
+                    }
                 )
             )
         }

@@ -14,6 +14,10 @@ Describe "ConvertTo-JiraStatusCategory" -Tag 'Unit' {
     "name": "In Progress"
 }
 "@
+
+        #region Mocks
+        Add-MockConvertToJiraUser
+        #endregion Mocks
     }
 
     Describe "Instanciating an object" {
@@ -29,9 +33,10 @@ Describe "ConvertTo-JiraStatusCategory" -Tag 'Unit' {
 
     Describe "Conversion of InputObject" {
         BeforeAll {
-            Add-MockConvertToJiraUser
-
-            $statusCategory = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraStatusCategory -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $statusCategory = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraStatusCategory -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "can convert to StatusCategory object" {
@@ -47,7 +52,10 @@ Describe "ConvertTo-JiraStatusCategory" -Tag 'Unit' {
 
     Describe "Return the expected format" {
         BeforeEach {
-            $statusCategory = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraStatusCategory -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $statusCategory = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraStatusCategory -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(
@@ -69,4 +77,3 @@ Describe "ConvertTo-JiraStatusCategory" -Tag 'Unit' {
         It "prints nicely to string" { }
     }
 }
-

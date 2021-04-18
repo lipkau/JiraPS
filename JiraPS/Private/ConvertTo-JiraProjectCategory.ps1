@@ -15,7 +15,10 @@ function ConvertTo-JiraProjectCategory {
                         id,
                     name,
                     description,
-                    @{Name = "RestUrl"; Expression = { $object.self } }
+                    @{ Name = "RestUrl"; Expression = {
+                            = $object.self ?? $null
+                        }
+                    }
                 )
             )
         }

@@ -35,7 +35,10 @@ Describe "ConvertTo-JiraIssueType" -Tag 'Unit' {
 
     Describe "Conversion of InputObject" {
         BeforeAll {
-            $issueType = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraIssueType -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $issueType = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraIssueType -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "can convert to IssueType object" {
@@ -51,7 +54,10 @@ Describe "ConvertTo-JiraIssueType" -Tag 'Unit' {
 
     Describe "Return the expected format" {
         BeforeEach {
-            $issueType = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraIssueType -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $issueType = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraIssueType -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(

@@ -64,11 +64,19 @@ function Write-MockInfo {
 }
 
 #region Mocked objects
+$mockedJiraFilter = [AtlassianPS.JiraPS.Filter]@{
+    Id      = 10005
+    RestUrl = 'https://jira.example.com/rest/api/latest/filter/10005'
+}
 $mockedJiraIssue = [AtlassianPS.JiraPS.Issue]@{
     Id      = 41701
     Key     = 'TEST-001'
     Fields  = @{ Summary = 'A cool ticket' }
     RestURL = 'http://jiraserver.example.com/rest/api/latest/issue/41701'
+}
+$mockedJiraIssueLink = [AtlassianPS.JiraPS.IssueLink]@{
+    type         = [AtlassianPS.JiraPS.IssueLinkType]@{name = 'Composition' }
+    outwardIssue = [AtlassianPS.JiraPS.Issue]@{key = 'TEST-002' }
 }
 $mockedJiraIssueComment = [AtlassianPS.JiraPS.Comment]@{
     Id           = "10103"
@@ -82,6 +90,46 @@ $mockedJiraIssueComment = [AtlassianPS.JiraPS.Comment]@{
         value = "Developers"
     }
     RestUrl      = "https://powershell.atlassian.net/rest/api/2/issue/10013/comment/10103"
+}
+$mockedJiraComponent = [AtlassianPS.JiraPS.Component]@{
+    Id          = "11000"
+    Name        = "test component"
+    Description = "A test component"
+    RestUrl     = "http://jiraserver.example.com/rest/api/2/component/11000"
+}
+$mockedJiraIssueType = [AtlassianPS.JiraPS.IssueType]@{
+    Id   = 40001
+    Name = 'Bug'
+}
+$mockedJiraProject = [AtlassianPS.JiraPS.Project]@{
+    Id   = 20001
+    Key  = 'TV'
+    Name = 'T Virus'
+}
+$mockedJiraProjectCategory = [AtlassianPS.JiraPS.ProjectCategory]@{
+    Id          = 10000
+    Name        = "Home Connect"
+    Description = "Home Connect Projects"
+    RestUrl     = "http://jiraserver.example.com/rest/api/latest/projectCategory/10000"
+}
+$mockedJiraRole = [AtlassianPS.JiraPS.Role]@{
+    Id   = 30001
+    Name = "Administrators"
+}
+$mockedJiraStatus = [AtlassianPS.JiraPS.Status]@{
+    Id          = 4
+    Name        = "In Progress"
+    Description = "something"
+    Category    = $mockedJiraStatusCategory
+    IconUrl     = "http://jiraserver.example.com/rest/api/2/statuscategory/inprogress.gif"
+    RestUrl     = "http://jiraserver.example.com/rest/api/2/statuscategory/4"
+}
+$mockedJiraStatusCategory = [AtlassianPS.JiraPS.StatusCategory]@{
+    Id        = 2
+    Key       = "new"
+    Name      = "To Do"
+    ColorName = "blue-gray"
+    RestUrl   = "https://powershell.atlassian.net/rest/api/2/statuscategory/2"
 }
 $mockedJiraServerUser = [AtlassianPS.JiraPS.User]@{
     Key          = 'fred'
@@ -112,6 +160,44 @@ function Add-CommonMocks {
         throw 'Unidentified call to Invoke-JiraMethod'
     }
 }
+
+function Add-MockConvertToJiraComponent {
+    Mock ConvertTo-JiraComponent -ModuleName 'JiraPS' { $mockedJiraComponent }
+}
+function Add-MockConvertToJiraIssueType {
+    Mock ConvertTo-JiraIssueType -ModuleName 'JiraPS' { $mockedJiraIssueType }
+}
+function Add-MockConvertToJiraProjectCategory {
+    Mock ConvertTo-JiraProjectCategory -ModuleName 'JiraPS' { $mockedJiraProjectCategory }
+}
+function Add-MockConvertToJiraRole {
+    Mock ConvertTo-JiraRole -ModuleName 'JiraPS' { $mockedJiraRole }
+}
+function Add-MockConvertToJiraUser {
+    Mock ConvertTo-JiraUser -ModuleName 'JiraPS' { $mockedJiraServerUser }
+}
+function Add-MockGetJiraConfigServer {
+    Mock Get-JiraConfigServer -ModuleName 'JiraPS' { 'http://jiraserver.example.com' }
+}
+function Add-MockGetJiraFilter {
+    Mock Get-JiraFilter -ModuleName 'JiraPS' { $mockedJiraFilter }
+}
+function Add-MockGetJiraIssue {
+    Mock Get-JiraIssue -ModuleName 'JiraPS' { $mockedJiraIssue }
+}
+# function Add-MockGetJiraIssueComment {
+#     Mock Get-JiraIssueComment -ModuleName 'JiraPS' { $mockedJiraIssueComment, $mockedJiraIssueComment }
+# }
+function Add-MockGetJiraProject {
+    Mock Get-JiraProject -ModuleName 'JiraPS' { $mockedJiraProject }
+}
+function Add-MockGetJiraRole {
+    Mock Get-JiraRole -ModuleName 'JiraPS' { $mockedJiraRole }
+}
+function Add-MockResolveJiraIssueUrl {
+    Mock Resolve-JiraIssueUrl -ModuleName 'JiraPS' {
+        $mockedJiraIssue.RestUrl
+    }
 }
 #endregion Mocked Cmdlets
 
@@ -119,12 +205,45 @@ Export-ModuleMember -Function * -Variable *
 
 function Write-MockDebug {
     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingWriteHost', '')]
-    [CmdletBinding()]
-    param(
-        $Message
-    )
+    param( $Message )
     if ($script:ShowDebugText) {
         Write-Host "       [DEBUG] $Message" -ForegroundColor Yellow
     }
 }
+
+# function New-ObjectWithTypeName {
+#     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseShouldProcessForStateChangingFunctions', '')]
+#     param(
+#         [Hashtable]$InputObject,
+#         [String]$TypeName
+#     )
+
+#     $object = [PSCustomObject]$InputObject
+#     $object.PSObject.TypeNames.Insert(0, $TypeName)
+#     return $object
+# }
+
 #endregion ExposedFunctions
+
+#TODO: remove
+
+# function castsToString($obj) {
+#     if ($obj -is [System.Array]) {
+#         $o = $obj[0]
+#     }
+#     else {
+#         $o = $obj
+#     }
+
+#     $o.ToString() | Should -Not -BeNullOrEmpty
+# }
+
+# function checkPsType($obj, $typeName) {
+#     It "Uses output type of '$typeName'" {
+#         checkType $obj $typeName
+#     }
+#     It "Can cast to string" {
+#         castsToString($obj)
+#     }
+# }
+

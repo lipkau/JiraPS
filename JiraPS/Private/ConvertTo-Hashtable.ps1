@@ -18,9 +18,11 @@ function ConvertTo-Hashtable {
 
     process {
         $hash = @{ }
+
         $InputObject.PSObject.Properties | ForEach-Object {
             $hash[$_.Name] = $_.Value
         }
+
         $hash
     }
 }

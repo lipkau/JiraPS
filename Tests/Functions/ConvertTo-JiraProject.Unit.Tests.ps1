@@ -1,88 +1,153 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertTo-JiraProject" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $projectKey = 'IT'
-        $projectId = '10003'
-        $projectName = 'Information Technology'
-
-        $sampleJson = @"
+        $sampleObject = ConvertFrom-Json -InputObject @"
 {
     "expand": "description,lead,url,projectKeys",
-    "self": "$jiraServer/rest/api/2/project/$projectId",
-    "id": "$projectId",
-    "key": "$projectKey",
-    "name": "$projectName",
-    "description": "",
+    "self": "http://jiraserver.example.com/rest/api/2/project/10003",
+    "id": "10003",
+    "key": "IT",
+    "name": "Information Technology",
+    "description": "some description",
     "lead": {
-        "self":  "$jiraServer/rest/api/2/user?username=admin",
+        "self":  "http://jiraserver.example.com/rest/api/2/user?username=admin",
         "key": "admin",
         "name": "admin",
-        "avatarUrls": {
-            "48x48": "$jiraServer/secure/useravatar?ownerId=admin\u0026avatarId=10903",
-            "24x24": "$jiraServer/secure/useravatar?size=small\u0026ownerId=admin\u0026avatarId=10903",
-            "16x16": "$jiraServer/secure/useravatar?size=xsmall\u0026ownerId=admin\u0026avatarId=10903",
-            "32x32": "$jiraServer/secure/useravatar?size=medium\u0026ownerId=admin\u0026avatarId=10903"
-        },
-        "displayName": "Admin",
-        "active": true
     },
-    "url": "$jiraServer/browse/HCC/",
+    "url": "http://jiraserver.example.com/browse/HCC/",
     "avatarUrls": {
-        "48x48": "$jiraServer/secure/projectavatar?pid=16802\u0026avatarId=10011",
-        "24x24": "$jiraServer/secure/projectavatar?size=small\u0026pid=16802\u0026avatarId=10011",
-        "16x16": "$jiraServer/secure/projectavatar?size=xsmall\u0026pid=16802\u0026avatarId=10011",
-        "32x32": "$jiraServer/secure/projectavatar?size=medium\u0026pid=16802\u0026avatarId=10011"
+        "48x48": "http://jiraserver.example.com/secure/projectavatar?pid=16802\u0026avatarId=10011",
+        "24x24": "http://jiraserver.example.com/secure/projectavatar?size=small\u0026pid=16802\u0026avatarId=10011",
+        "16x16": "http://jiraserver.example.com/secure/projectavatar?size=xsmall\u0026pid=16802\u0026avatarId=10011",
+        "32x32": "http://jiraserver.example.com/secure/projectavatar?size=medium\u0026pid=16802\u0026avatarId=10011"
     },
     "projectKeys": "HCC",
     "projectCategory": {
-        "self": "$jiraServer/rest/api/latest/projectCategory/10000",
+        "self": "http://jiraserver.example.com/rest/api/latest/projectCategory/10000",
         "id":  "10000",
         "name":  "Home Connect",
         "description":  "Home Connect Projects"
     },
     "projectTypeKey": "software",
     "components": {
-        "self": "$jiraServer/rest/api/2/component/11000",
+        "self": "http://jiraserver.example.com/rest/api/2/component/11000",
         "id": "11000",
         "description": "A test component",
         "name": "test component"
     }
 }
 "@
-        $sampleObject = ConvertFrom-Json -InputObject $sampleJson
 
-        $r = ConvertTo-JiraProject -InputObject $sampleObject
+        #region Mocks
+        Add-MockConvertToJiraComponent
 
-        It "Creates a PSObject out of JSON input" {
-            $r | Should Not BeNullOrEmpty
+        Add-MockConvertToJiraIssueType
+
+        Add-MockConvertToJiraProjectCategory
+
+        Add-MockConvertToJiraRole
+
+        Add-MockConvertToJiraUser
+        #endregion Mocks
+    }
+
+    Describe "Instanciating an object" {
+        It "Creates a new instance via typed input" {
+            [AtlassianPS.JiraPS.Project]10001 | Should -BeOfType [AtlassianPS.JiraPS.Project]
+            [AtlassianPS.JiraPS.Project]"10001" | Should -BeOfType [AtlassianPS.JiraPS.Project]
+            [AtlassianPS.JiraPS.Project]"TV" | Should -BeOfType [AtlassianPS.JiraPS.Project]
         }
 
-        checkPsType $r 'JiraPS.Project'
+        It "Creates a new instance via hashtable" {
+            [AtlassianPS.JiraPS.Project]@{
+                Id  = 10001
+                Key = 'TV'
+            } | Should -BeOfType [AtlassianPS.JiraPS.Project]
+        }
+    }
 
-        defProp $r 'Id' $projectId
-        defProp $r 'Key' $projectKey
-        defProp $r 'Name' $projectName
-        defProp $r 'RestUrl' "$jiraServer/rest/api/2/project/$projectId"
+    Describe "Conversion of InputObject" {
+        BeforeAll {
+            $assertMockCalledSplat = @{
+                ModuleName = 'JiraPS'
+                Exactly    = $true
+                Times      = 1
+                Scope      = 'Describe'
+            }
 
-        checkPsType $r.Lead 'JiraPS.User'
-        # checkPsType $r.IssueTypes 'JiraPS.IssueType'
+            $project = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraProject -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "can convert to Project object" {
+            $project | Should -HaveCount 1
+        }
+
+        It "returns an object of type [AtlassianPS.JiraPS.Project]" {
+            $project | Should -BeOfType [AtlassianPS.JiraPS.Project]
+        }
+
+        It 'converts nested types' {
+            Assert-MockCalled @assertMockCalledSplat -CommandName 'ConvertTo-JiraComponent'
+            Assert-MockCalled @assertMockCalledSplat -CommandName 'ConvertTo-JiraIssueType' -Times 1
+            Assert-MockCalled @assertMockCalledSplat -CommandName 'ConvertTo-JiraProjectCategory'
+            Assert-MockCalled @assertMockCalledSplat -CommandName 'ConvertTo-JiraRole' -Times 1
+            Assert-MockCalled @assertMockCalledSplat -CommandName 'ConvertTo-JiraUser'
+        }
+    }
+
+    Describe "Return the expected format" {
+        BeforeEach {
+            $project = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraProject -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(
+            @{ property = 'Id'; value = '10003' }
+            @{ property = 'key'; value = 'IT' }
+            @{ property = 'name'; value = 'Information Technology' }
+            @{ property = 'description' }
+            @{ property = 'lead'; type = 'AtlassianPS.JiraPS.User' }
+            @{ property = 'Category'; type = 'AtlassianPS.JiraPS.ProjectCategory' }
+            @{ property = 'Components'; type = 'AtlassianPS.JiraPS.Component[]' }
+            @{ property = 'restUrl'; value = 'http://jiraserver.example.com/rest/api/2/project/10003' }
+        ) {
+            $project.PSObject.Properties.Name | Should -Contain $property
+            if ($value) {
+                $project.$property | Should -Be $value
+            }
+            if ($type) {
+                , ($project.$property) | Should -BeOfType $type
+            }
+        }
+
+        It "prints nicely to string" {
+            $project1 = [AtlassianPS.JiraPS.Project]10001
+            $project2 = [AtlassianPS.JiraPS.Project]"10001"
+            $project3 = [AtlassianPS.JiraPS.Project]"TV"
+            $project4 = [AtlassianPS.JiraPS.Project]@{
+                Id  = 10001
+                Key = 'TV'
+            }
+            $project5 = [AtlassianPS.JiraPS.Project]@{
+                Id   = 10001
+                Key  = 'TV'
+                Name = 'T Virus'
+            }
+
+            $project1.ToString() | Should -Be 'id: 10001'
+            $project2.ToString() | Should -Be 'id: 10001'
+            $project3.ToString() | Should -Be 'key: TV'
+            $project4.ToString() | Should -Be 'key: TV'
+            $project5.ToString() | Should -Be 'T Virus'
+        }
     }
 }

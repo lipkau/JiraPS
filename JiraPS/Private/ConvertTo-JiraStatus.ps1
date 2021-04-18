@@ -16,12 +16,12 @@ function ConvertTo-JiraStatus {
                     name,
                     description,
                     @{ Name = 'Category'; Expression = {
-                            if ($object.statusCategory) { ConvertTo-JiraStatusCategory $object.statusCategory } else { $null }
+                            = (ConvertTo-JiraStatusCategory -InputObject $object.statusCategory) ?? $null
                         }
                     },
                     iconUrl,
-                    @{Name = "RestUrl"; Expression = {
-                            if ($object.self) { $object.self } else { $null }
+                    @{ Name = "RestUrl"; Expression = {
+                            = $object.self ?? $null
                         }
                     }
                 )

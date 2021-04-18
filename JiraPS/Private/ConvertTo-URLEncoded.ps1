@@ -7,7 +7,7 @@ function ConvertTo-URLEncoded {
     [OutputType( [String] )]
     param (
         # String to encode
-        [Parameter( Mandatory, ValueFromPipeline )]
+        [Parameter( ValueFromPipeline )]
         [String[]]
         $InputString
     )

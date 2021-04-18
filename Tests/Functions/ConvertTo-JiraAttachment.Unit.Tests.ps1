@@ -1,110 +1,100 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertTo-JiraAttachment" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $attachmentID1 = "270709"
-        $attachmentName1 = "Nav2-HCF.PNG"
-        $attachmentID2 = "270656"
-
-        $sampleJson = @"
-[
-    {
-        "self":  "$jiraServer/rest/api/2/attachment/$attachmentID1",
-        "id":  "$attachmentID1",
-        "filename":  "$attachmentName1",
-        "author":  {
-            "self":  "$jiraServer/rest/api/2/user?username=JonDoe",
-            "name":  "JonDoe",
-            "key":  "JonDoe",
-            "emailAddress":  "JonDoe@server.com",
-            "avatarUrls":  {},
-            "displayName":  "Doe, Jon",
-            "active":  true,
-            "timeZone":  "Europe/Berlin"
-        },
-        "created":  "2017-05-30T11:20:34.000+0000",
-        "size":  366272,
-        "mimeType":  "image/png",
-        "content":  "$jiraServer/secure/attachment/$attachmentID1/$attachmentName1",
-        "thumbnail":  "$jiraServer/secure/thumbnail/$attachmentID1/_thumb_$attachmentID1.png"
+        $sampleObject = ConvertFrom-Json -InputObject  @"
+{
+    "self": "http://jiraserver.example.com/rest/api/2/attachment/270709",
+    "id": "270709",
+    "filename": "Nav2-HCF.PNG",
+    "author": {
+        "self": "http://jiraserver.example.com/rest/api/2/user?username=JonDoe",
+        "name": "JonDoe",
+        "key": "JonDoe",
+        "emailAddress": "JonDoe@server.com",
+        "AttachmentUrls": {},
+        "displayName": "Doe, Jon",
+        "active": true,
+        "timeZone": "Europe/Berlin"
     },
-    {
-        "self":  "$jiraServer/rest/api/2/attachment/$attachmentID2",
-        "id":  "$attachmentID2",
-        "filename":  "Nav-HCF.PNG",
-        "author":  {
-            "self":  "$jiraServer/rest/api/2/user?username=JonDoe",
-            "name":  "JonDoe",
-            "key":  "JonDoe",
-            "emailAddress":  "JonDoe@server.com",
-            "avatarUrls":  {},
-            "displayName":  "Doe, Jon",
-            "active":  true,
-            "timeZone":  "Europe/Berlin"
-        },
-        "created":  "2017-05-30T09:26:17.000+0000",
-        "size":  548806,
-        "mimeType":  "image/png",
-        "content":  "$jiraServer/secure/attachment/$attachmentID2/Nav-HCF.PNG",
-        "thumbnail":  "$jiraServer/secure/thumbnail/$attachmentID2/_thumb_$attachmentID2.png"
-    }
-]
+    "created": "2017-05-30T11:20:34.000+0000",
+    "size": 366272,
+    "mimeType": "image/png",
+    "content": "http://jiraserver.example.com/secure/attachment/270709/Nav2-HCF.PNG",
+    "thumbnail": "http://jiraserver.example.com/secure/thumbnail/270709/_thumb_270709.png"
+}
 "@
 
-        $sampleObject = ConvertFrom-Json -InputObject $sampleJson
+        #region Mocks
+        Add-MockConvertToJiraUser
+        #endregion Mocks
+    }
 
-        $r = ConvertTo-JiraAttachment -InputObject $sampleObject
-        It "Creates a PSObject out of JSON input" {
-            $r | Should Not BeNullOrEmpty
-        }
+    Describe "Instanciating an object" {
+        It "Creates a new instance via typed input" { }
 
-        checkPsType $r 'JiraPS.Attachment'
+        It "Creates a new instance via hashtable" {
+            [AtlassianPS.JiraPS.Attachment]@{
+                filename = "access.log"
+                author   = $mockedJiraCloudUser
+            } | Should -BeOfType [AtlassianPS.JiraPS.Attachment]
+        }
+    }
 
-        defProp $r[0] 'Id' $attachmentID1
-        defProp $r[0] 'FileName' $attachmentName1
-        It "Defines Date fields as Date objects" {
-            $r[0].created | Should Not BeNullOrEmpty
-            checkType $r[0].created 'System.DateTime'
-        }
-        It "Defines Author field as User objects" {
-            $r[0].author | Should Not BeNullOrEmpty
-            checkType $r[0].author 'JiraPS.User'
-        }
-        It "Defines the 'self' property" {
-            $r[0].self | Should Not BeNullOrEmpty
-        }
-        It "Defines the 'size' property" {
-            $r[0].size | Should Not BeNullOrEmpty
-            checkType $r[0].size 'System.Int32'
-        }
-        It "Defines the 'content' property" {
-            $r[0].content | Should Not BeNullOrEmpty
-        }
-        defProp $r[0] 'mimeType' 'image/png'
-        It "Defines the 'thumbnail' property" {
-            $r[0].thumbnail | Should Not BeNullOrEmpty
+    Describe "Conversion of InputObject" {
+        BeforeAll {
+            $attachment = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraAttachment -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
-        It "Handles pipeline input" {
-            $r = $sampleObject | ConvertTo-JiraAttachment
-            @($r).Count | Should Be 2
+        It "can convert to Attachment object" {
+            $attachment | Should -HaveCount 1
+        }
+
+        It "returns an object of type [AtlassianPS.JiraPS.Attachment]" {
+            $attachment | Should -BeOfType [AtlassianPS.JiraPS.Attachment]
+        }
+
+        It 'converts nested types' {
+            Assert-MockCalled -CommandName 'ConvertTo-JiraUser' -ModuleName 'JiraPS' -Scope 'Describe' -Exactly -Times 1
+        }
+    }
+
+    Describe "Return the expected format" {
+        BeforeEach {
+            $attachment = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraAttachment -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
+        }
+
+        It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(
+            @{ property = 'Id'; value = '270709' }
+            @{ property = 'FileName'; value = 'Nav2-HCF.PNG' }
+            @{ property = 'mimeType'; value = 'image/png' }
+            @{ property = 'created'; type = 'System.DateTime' }
+            @{ property = 'author'; }
+            @{ property = 'restUrl' }
+            @{ property = 'size'; type = 'System.Int32' }
+            @{ property = 'content' }
+            @{ property = 'thumbnail' }
+        ) {
+            $attachment.PSObject.Properties.Name | Should -Contain $property
+            if ($value) {
+                $attachment.$property | Should -Be $value
+            }
+            if ($type) {
+                , ($attachment.$property) | Should -BeOfType $type
+            }
+        }
+
+        It "prints nicely to string" {
+            $attachment.ToString() | Should -Be 'Nav2-HCF.PNG'
         }
     }
 }

@@ -1,5 +1,6 @@
 function ConvertTo-JiraIssueLinkType {
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.IssueLinkType] )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -7,24 +8,16 @@ function ConvertTo-JiraIssueLinkType {
     )
 
     process {
-        foreach ($i in $InputObject) {
+        foreach ($object in $InputObject) {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
 
-            $props = @{
-                'ID'          = $i.id
-                'Name'        = $i.name
-                'InwardText'  = $i.inward
-                'OutwardText' = $i.outward
-                'RestUrl'     = $i.self
-            }
-
-            $result = New-Object -TypeName PSObject -Property $props
-            $result.PSObject.TypeNames.Insert(0, 'JiraPS.IssueLinkType')
-            $result | Add-Member -MemberType ScriptMethod -Name "ToString" -Force -Value {
-                Write-Output "$($this.Name)"
-            }
-
-            Write-Output $result
+            [AtlassianPS.JiraPS.IssueLinkType](ConvertTo-Hashtable -InputObject ( $object | Select-Object `
+                        id,
+                    name,
+                    @{ Name = "InwardText"; Expression = { $object.inward } },
+                    @{ Name = "OutwardText"; Expression = { $object.outward } }
+                )
+            )
         }
     }
 }

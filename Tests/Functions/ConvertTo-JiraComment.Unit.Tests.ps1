@@ -44,6 +44,13 @@ Describe "ConvertTo-JiraComment" -Tag 'Unit' {
     }
 }
 "@
+
+        #region Mocks
+        Add-MockConvertToJiraUser
+
+        $date = Get-Date
+        Mock Get-Date { $date }
+        #endregion Mocks
     }
 
     Describe "Instanciating an object" {
@@ -61,11 +68,10 @@ Describe "ConvertTo-JiraComment" -Tag 'Unit' {
 
     Describe "Conversion of InputObject" {
         BeforeAll {
-            $data = Get-Date
-            Add-MockConvertToJiraUser
-            Mock Get-Date { $date }
-
-            $comment = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraComment -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $comment = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraComment -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "can convert to Comment object" {
@@ -85,7 +91,10 @@ Describe "ConvertTo-JiraComment" -Tag 'Unit' {
 
     Describe "Return the expected format" {
         BeforeEach {
-            $commnet = InModuleScope JiraPS { param($sampleObject) ConvertTo-JiraComment -InputObject $sampleObject } -Parameters @{ sampleObject = $sampleObject }
+            $commnet = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraComment -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
         It "has a property '<property>' with value '<value>' of type '<type>'" -ForEach @(

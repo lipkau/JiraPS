@@ -16,10 +16,13 @@ function ConvertTo-JiraRole {
                     name,
                     description,
                     @{ Name = "actors"; Expression = {
-                            if ($object.actors) { ConvertTo-JiraRoleActor $object.actors } else { $null }
+                            = (ConvertTo-JiraRoleActor -InputObject $object.actors) ?? $null
                         }
                     },
-                    @{Name = "RestUrl"; Expression = { $object.self } }
+                    @{ Name = "RestUrl"; Expression = {
+                            = $object.self ?? $null
+                        }
+                    }
                 )
             )
         }
