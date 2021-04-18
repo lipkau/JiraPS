@@ -44,9 +44,11 @@ Describe "Get-JiraField" -Tag 'Unit' {
         #region Mock
         Add-CommonMocks
 
+        Add-MockGetJiraConfigServer
+
         Mock Invoke-JiraMethod -ParameterFilter {
             $Method -eq 'Get' -and
-            $Uri -like "*/rest/api/*/field"
+            $Uri -like "https://powershell.atlassian.net/rest/api/*/field"
         } {
             Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
             $fieldResponse
@@ -55,60 +57,55 @@ Describe "Get-JiraField" -Tag 'Unit' {
     }
 
     Describe 'Behavior checking' {
-        It 'Gets all Fields' {
-            $fields = Get-JiraField | Should -HaveCount 2
-
+        BeforeAll {
             $assertMockCalledSplat = @{
                 CommandName = 'Invoke-JiraMethod'
                 Exactly     = $true
                 Times       = 1
                 Scope       = 'It'
             }
+        }
+
+        It 'Gets all Fields' {
+            Get-JiraField | Should -HaveCount 2
+
             Assert-MockCalled @assertMockCalledSplat
         }
 
         It 'Only makes one request to the server when using the pipeline' {
-            'Issue Type', 'project' | Get-JiraField
+            'issuetype', 'project' | Get-JiraField
 
-            $assertMockCalledSplat = @{
-                CommandName = 'Invoke-JiraMethod'
-                Exactly     = $true
-                Times       = 1
-                Scope       = 'It'
-            }
             Assert-MockCalled @assertMockCalledSplat
         }
 
         It 'Gets the Field by Id' {
-            Get-JiraField -Field "issuetype" | Should -HaveCount 1
+            Get-JiraField -Id "issuetype" | Should -HaveCount 1
         }
 
         It 'Gets the Field by Name' {
-            Get-JiraField -Field "Issue Type" | Should -HaveCount 1
+            Get-JiraField -Name "Issue Type" | Should -HaveCount 1
+        }
+
+        It 'accepts wilcards when filtering by Name' {
+            Get-JiraField -Name "*e*" | Should -HaveCount 2
+        }
+
+        It 'Converts results to [AtlassianPS.JiraPS.Field]' {
+            Get-JiraField
+            Get-JiraField -Id "issuetype"
+            Get-JiraField -Name "Issue Type"
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $OutputType -eq 'JiraField'
+            } -Times 3
         }
     }
 
     Describe 'Input testing' {
         It 'accepts Issues over the pipeline' {
-            'Issue Type', 'project' | Get-JiraField -ErrorAction Stop
+            'Issue Type', 'project' | Get-JiraField
         }
     }
 
-    Describe 'Forming of the request' {
-    }
-
-    Describe 'Return the expected type' {
-        It 'converts the output to AtlassianPS.JiraPS.Field' {
-            Get-JiraField
-
-            $assertMockCalledSplat = @{
-                CommandName     = 'Invoke-JiraMethod'
-                Exactly         = $true
-                Times           = 1
-                Scope           = 'It'
-                ParameterFilter = { $OutputType -eq 'JiraField' }
-            }
-            Assert-MockCalled @assertMockCalledSplat
-        }
-    }
+    Describe 'Forming of the request' { }
 }

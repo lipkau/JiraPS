@@ -3,9 +3,13 @@ function Get-JiraField {
     [CmdletBinding( DefaultParameterSetName = '_All' )]
     [OutputType( [AtlassianPS.JiraPS.Field] )]
     param(
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = '_Search' )]
-        [AtlassianPS.JiraPS.Field[]]
-        $Field,
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, ParameterSetName = '_ById' )]
+        [String[]]
+        $Id,
+
+        [Parameter( Position = 0, Mandatory, ParameterSetName = '_ByName' )]
+        [String[]]
+        $Name,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -37,17 +41,20 @@ function Get-JiraField {
             '_All' {
                 $allFields
             }
-            '_Search' {
-                foreach ($_field in $Field) {
-                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_field]"
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_field [$_field]"
+            '_ById' {
+                foreach ($_id in $Id) {
+                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_id]"
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_id [$_id]"
 
-                    if ($_field.Id) {
-                        $allFields | Where-Object { ($_.Id -eq $_field.Id) }
-                    }
-                    else {
-                        $allFields | Where-Object { ($_.Name -like $_field.Name) }
-                    }
+                    $allFields | Where-Object { ($_.Id -eq $_id) }
+                }
+            }
+            '_ByName' {
+                foreach ($_name in $Name) {
+                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_name]"
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_name [$_name]"
+
+                    $allFields | Where-Object { ($_.Name -like $_name) }
                 }
             }
         }

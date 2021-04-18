@@ -40,7 +40,10 @@ function ConvertTo-JiraProject {
                         }
                     },
                     @{ Name = 'HttpUrl'; Expression = {
-                            = $object.url ?? $null
+                            if ($object.self -and $object.key) {
+                                "{0}browse/{1}" -f ($object.self -split 'rest')[0], $object.key
+                            }
+                            else { $null }
                         }
                     },
                     @{ Name = 'RestUrl'; Expression = {

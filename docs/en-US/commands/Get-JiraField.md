@@ -21,20 +21,27 @@ This function returns information about JIRA fields
 Get-JiraField [-Credential <PSCredential>] [<CommonParameters>]
 ```
 
-### _Search
+### _byId
 
 ```powershell
-Get-JiraField [-Field] <AtlassianPS.JiraPS.Field[]> [-Credential <PSCredential>]
+Get-JiraField [-Id] <String[]> [-Credential <PSCredential>] [<CommonParameters>]
+```
+
+### _byName
+
+```powershell
+Get-JiraField -Name <String[]> [-Credential <PSCredential>]
 [<CommonParameters>]
 ```
 
 ## DESCRIPTION
 
-This function provides information about JIRA fields, or about one field in particular.
+This function provides information about JIRA fields,
+or about one field in particular.
 This is a good way to identify a field's ID by its name, or vice versa.
 
-Typically, this information is only needed when identifying what fields are necessary
-to create or edit issues.
+Typically, this information is only needed when identifying what fields
+are necessary to create or edit issues.
 See `Get-JiraIssueCreateMetadata` for more details.
 
 ## EXAMPLES
@@ -45,32 +52,56 @@ See `Get-JiraIssueCreateMetadata` for more details.
 Get-JiraField
 ```
 
-This example returns information about all JIRA fields visible to the current user.
+Returns information about all JIRA fields visible to the current user.
 
 ### EXAMPLE 2
 
 ```powershell
-Get-JiraField "Key"
+Get-JiraField "issuetype"
 ```
 
-This example returns information about the Key field.
+Get the Field with `Id` of `issuetype`.
+
+### EXAMPLE 3
+
+```powershell
+Get-JiraField -Name "*type"
+```
+
+Finds all Fields which end with `type`.
 
 ## PARAMETERS
 
-### -Field
+### -Id
 
-The Field name or ID to search.
+The Id to search
 
 ```yaml
-Type: AtlassianPS.JiraPS.Field[]
-Parameter Sets: _Search
+Type: String[]
+Parameter Sets: _byId
 Aliases:
 
 Required: True
 Position: 1
 Default value: None
-Accept pipeline input: True (ByValue)
+Accept pipeline input: True (ByValue, ByPropertyName)
 Accept wildcard characters: False
+```
+
+### -Name
+
+The Name to search
+
+```yaml
+Type: String[]
+Parameter Sets: _byName
+Aliases:
+
+Required: True
+Position: 1
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: True
 ```
 
 ### -Credential
@@ -92,10 +123,11 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable,
--InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable,
--Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
+This cmdlet supports the common parameters: -Debug, -ErrorAction,
+-ErrorVariable, -InformationAction, -InformationVariable, -OutVariable,
+-OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters
+(<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
@@ -105,7 +137,8 @@ For more information, see about_CommonParameters (<http://go.microsoft.com/fwlin
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 
