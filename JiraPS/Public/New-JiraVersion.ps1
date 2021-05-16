@@ -1,4 +1,4 @@
-﻿function New-JiraVersion {
+function New-JiraVersion {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess, DefaultParameterSetName = 'byObject' )]
     param(
@@ -38,8 +38,8 @@
                 $Input = $_
 
                 switch ($true) {
-                    {"JiraPS.Project" -in $Input.PSObject.TypeNames} { return $true }
-                    {$Input -is [String]} { return $true}
+                    { "JiraPS.Project" -in $Input.PSObject.TypeNames } { return $true }
+                    { $Input -is [String] } { return $true }
                     Default {
                         $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
                         $errorId = 'ParameterType.NotJiraProject'
@@ -97,7 +97,7 @@
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        $requestBody = @{}
+        $requestBody = @{ }
         Switch ($PSCmdlet.ParameterSetName) {
             'byObject' {
                 $requestBody["name"] = $InputObject.Name
@@ -149,13 +149,12 @@
             URI        = $resourceURi
             Method     = "POST"
             Body       = ConvertTo-Json -InputObject $requestBody
+            OutputType = "JiraVersion"
             Credential = $Credential
         }
         Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
         if ($PSCmdlet.ShouldProcess($Name, "Creating new Version on JIRA")) {
-            $result = Invoke-JiraMethod @parameter
-
-            Write-Output (ConvertTo-JiraVersion -InputObject $result)
+            Invoke-JiraMethod @parameter
         }
     }
 

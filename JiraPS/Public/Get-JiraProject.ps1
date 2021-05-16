@@ -19,7 +19,6 @@ function Get-JiraProject {
         $server = Get-JiraConfigServer -ErrorAction Stop
 
         $parameter = @{
-            Uri          = "$server/rest/api/latest/project"
             Method       = "GET"
             GetParameter = @{
                 expand = 'description,lead,issueTypes,url'
@@ -36,6 +35,8 @@ function Get-JiraProject {
 
         switch ($PSCmdlet.ParameterSetName) {
             '_All' {
+                $parameter['Uri'] = "$server/rest/api/latest/project"
+
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
                 Invoke-JiraMethod @parameter
             }
@@ -45,7 +46,7 @@ function Get-JiraProject {
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_project [$_project]"
 
                     $keyOrId = if ($_project.Key) { $_project.Key } else { $_project.Id }
-                    $parameter['Uri'] += "/$keyOrId"
+                    $parameter['Uri'] = "$server/rest/api/latest/project/$keyOrId"
 
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
                     Invoke-JiraMethod @parameter

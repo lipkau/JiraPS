@@ -1,124 +1,143 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Set-JiraVersion" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
+
+        #Sample response from the server
+        $versionResponse = @{
+            "RestUrl"     = "http://jiraserver.example.com/rest/api/2/version/12345"
+            "id"          = 16840
+            "description" = "version 1.0"
+            "name"        = "1.0"
+            "archived"    = $false
+            "released"    = $false
+            "projectId"   = 12101
+        }
+
+        #region Mocking
+        Invoke-CommonMocking
+
+        Mock Get-JiraProject {
+            [AtlassianPS.JiraPS.Project]@{ Key = "LDD"; Id = "12101" }
+        }
+
+        Mock Get-JiraVersion {
+            [AtlassianPS.JiraPS.Version]@{
+                "restUrl" = "http://jiraserver.example.com/rest/api/2/version/12345"
+                "name"    = "v1.0"
+            }
+        }
+
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Put' -and
+            $URI -like "*/version/12345"
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+            [PSCustomObject]$versionResponse
+        }
+        #endregion Mocking
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    #Sample response from the server
-    <# {
-        "self" : "http://jiraserver.example.com/rest/api/2/version/$versionID",
-        "id" : 16840,
-        "description" : "version 1.0",
-        "name" : "1.0",
-        "archived" : "False",
-        "released" : "False",
-        "projectId" : "12101"
-    } #>
-
-    #region Mocking
-    Mock Get-JiraConfigServer -ModuleName $env:BHProjectName {
-        'http://jiraserver.example.com'
-    }
-
-    $jiraServer = 'http://jiraserver.example.com'
-    $versionName = '1.0.0.0'
-    $versionID = '16840'
-    $projectKey = 'LDD'
-    $projectId = '12101'
-
-    Mock Get-JiraProject -ModuleName $env:BHProjectName {
-        $Projects = ConvertFrom-Json '{ "Key" : "LDD", "Id": "12101" }'
-        $Projects.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
-        $Projects
-    }
-
-    Mock Get-JiraVersion -ModuleName $env:BHProjectName {
-        ConvertFrom-Json '{ "restUrl" : "http://jiraserver.example.com/rest/api/2/version/12345", "name" : "v1.0" }'
-    }
-
-    Mock Invoke-JiraMethod -ModuleName $env:BHProjectName -ParameterFilter { $Method -eq 'Put' -and $URI -like "*/rest/api/*/version/12345" } {
-        ShowMockInfo 'Invoke-JiraMethod' @{Method = $Method; Uri = $Uri }
-        ConvertFrom-Json $testJsonOne
-    }
-
-    # Generic catch-all. This will throw an exception if we forgot to mock something.
-    Mock Invoke-JiraMethod -ModuleName $env:BHProjectName {
-        ShowMockInfo 'Invoke-JiraMethod' @{Method = $Method; Uri = $Uri }
-        throw "Unidentified call to Invoke-JiraMethod"
-    }
-    #endregion Mocking
-
-    Describe "Sanity checking" {
-        $command = Get-Command -Name Set-JiraVersion
-
-        It "has a parameter 'Version' of type [Object[]]" {
-            $command | Should -HaveParameter "Version" -Type [Object[]]
-        }
-
-        It "has a parameter 'Name' of type [String]" {
-            $command | Should -HaveParameter "Name" -Type [String]
-        }
-
-        It "has a parameter 'Description' of type [String]" {
-            $command | Should -HaveParameter "Description" -Type [String]
-        }
-
-        It "has a parameter 'Archived' of type [Bool]" {
-            $command | Should -HaveParameter "Archived" -Type [Bool]
-        }
-
-        It "has a parameter 'Released' of type [Bool]" {
-            $command | Should -HaveParameter "Released" -Type [Bool]
-        }
-
-        It "has a parameter 'ReleaseDate' of type [DateTime]" {
-            $command | Should -HaveParameter "ReleaseDate" -Type [DateTime]
-        }
-
-        It "has a parameter 'StartDate' of type [DateTime]" {
-            $command | Should -HaveParameter "StartDate" -Type [DateTime]
-        }
-
-        It "has a parameter 'Project' of type [Object]" {
-            $command | Should -HaveParameter "Project" -Type [Object]
-        }
-
-        It "has a parameter 'Credential' of type [PSCredential]" {
-            $command | Should -HaveParameter "Credential" -Type [PSCredential]
-        }
-    }
-
     Describe "Behavior checking" {
-        It "sets an Issue's Version Name" {
-            $version = Get-JiraVersion -Project $projectKey -Name $versionName
-            $results = Set-JiraVersion -Version $version -Name "NewName" -ErrorAction Stop
-            $results | Should Not BeNullOrEmpty
-            checkType $results "JiraPS.Version"
-            Assert-MockCalled 'Get-JiraVersion' -Times 2 -Scope It -ModuleName JiraPS -Exactly
-            Assert-MockCalled 'Get-JiraProject' -Times 0 -Scope It -ModuleName JiraPS -Exactly
-            Assert-MockCalled 'ConvertTo-JiraVersion' -Times 3 -Scope It -ModuleName JiraPS -Exactly
-            Assert-MockCalled 'Invoke-JiraMethod' -Times 1 -Scope It -ModuleName JiraPS -Exactly -ParameterFilter { $Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/version/$versionID" }
+        BeforeAll {
+            $version = Get-JiraVersion -Project "TEST" -Name "v1" -ErrorAction Stop
+            $project = Get-JiraProject -Project "TEST" -ErrorAction Stop
         }
-        It "sets an Issue's Version Name using the pipeline" {
-            $results = Get-JiraVersion -Project $projectKey | Set-JiraVersion -Name "NewName" -ErrorAction Stop
-            $results | Should Not BeNullOrEmpty
-            checkType $results "JiraPS.Version"
-            Assert-MockCalled 'Get-JiraVersion' -Times 2 -Scope It -ModuleName JiraPS -Exactly
-            Assert-MockCalled 'Get-JiraProject' -Times 0 -Scope It -ModuleName JiraPS -Exactly
-            Assert-MockCalled 'ConvertTo-JiraVersion' -Times 3 -Scope It -ModuleName JiraPS -Exactly
-            Assert-MockCalled 'Invoke-JiraMethod' -Times 1 -Scope It -ModuleName JiraPS -Exactly -ParameterFilter { $Method -eq 'Put' -and $URI -like "$jiraServer/rest/api/*/version/$versionID" }
+
+        It "Changes a Version" {
+            Set-JiraVersion -Version $version -Name "NewName" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It -ParameterFilter {
+                $Method -eq 'Put' -and
+                $URI -like "*/version/12345" -and
+                $OutputType -eq "JiraVersion"
+            }
         }
-        It "assert VerifiableMock" {
-            Assert-VerifiableMock
+
+        It "Changes a Version using the pipeline" {
+            $version | Set-JiraVersion -Name "NewName" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It -ParameterFilter {
+                $Method -eq 'Put' -and
+                $URI -like "*/version/12345" -and
+                $OutputType -eq "JiraVersion"
+            }
+        }
+
+        It "fetches the version if an incomplete object was provided" {
+            Set-JiraVersion -Version "12345" -Name "NewName" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraVersion -Exactly -Times 1 -Scope It
+        }
+
+        It "uses the provided version when a complete object was provided" {
+            $version | Set-JiraVersion -Name "NewName" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraVersion -Exactly -Times 0 -Scope It
+        }
+
+        It "fetches the project when an incomplete project was provided" {
+            Set-JiraVersion -Version $version -Project "TEST" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraProject -Exactly -Times 1 -Scope It
+        }
+
+        It "uses the provided project when a complete project was provided" {
+            $version | Set-JiraVersion -Project $project -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraProject -Exactly -Times 0 -Scope It
+        }
+
+        It "returns a Version when using PassThru" {
+            $r1 = Set-JiraVersion -Version $version -Project "TEST" -ErrorAction Stop
+            $r2 = Set-JiraVersion -Version $version -Project "TEST" -ErrorAction Stop -PassThru
+
+            $r1 | Should -BeNullOrEmpty
+            $r2 | Should -Not -BeNullOrEmpty
+        }
+    }
+
+    Describe "Input testing" {
+        BeforeAll {
+            $version = Get-JiraVersion -Project "TEST" -Name "v1" -ErrorAction Stop
+        }
+
+        It "Can change the name of a version" {
+            Set-JiraVersion -Version $version -Name "new Name" -ErrorAction Stop
+        }
+
+        It "Can change the description of a version" {
+            Set-JiraVersion -Version $version -Description "new description" -ErrorAction Stop
+        }
+
+        It "Can mark a version as archivied" {
+            Set-JiraVersion -Version $version -Archived $true -ErrorAction Stop
+            Set-JiraVersion -Version $version -Archived $false -ErrorAction Stop
+        }
+
+        It "Can mark a version as released" {
+            Set-JiraVersion -Version $version -Released $true -ErrorAction Stop
+            Set-JiraVersion -Version $version -Released $false -ErrorAction Stop
+        }
+
+        It "Can change the project of a version" {
+            Set-JiraVersion -Version $version -Project TEST -ErrorAction Stop
+        }
+
+        It "Can set the release date of a version" {
+            Set-JiraVersion -Version $version -ReleaseDate (Get-Date) -ErrorAction Stop
+        }
+
+        It "Can set the start date of a version" {
+            Set-JiraVersion -Version $version -StartDate (Get-Date) -ErrorAction Stop
         }
     }
 }

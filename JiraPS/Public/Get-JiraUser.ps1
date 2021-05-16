@@ -1,13 +1,13 @@
 function Get-JiraUser {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( DefaultParameterSetName = 'Self' )]
-    [OutputType([AtlassianPS.JiraPS.User])]
+    [OutputType( [AtlassianPS.JiraPS.User] )]
     param(
         [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ByUserName' )]
         [ValidateNotNullOrEmpty()]
         [Alias('AccountId', 'Key')]
         [AtlassianPS.JiraPS.User[]]
-        $UserName,
+        $Username,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -20,29 +20,32 @@ function Get-JiraUser {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $selfResourceUri = "$server/rest/api/latest/myself"
-        $exactResourceUri = "$server/rest/api/latest/user?{0}={1}"
+        $resourceUri_Self = "$server/rest/api/latest/myself"
+        $resourceUri_Exact = "$server/rest/api/latest/user"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        switch ($PsCmdLet.ParameterSetName) {
-            "Self" {
-                $resourceURi = $selfResourceUri
+        $parameter = @{
+            Method       = "GET"
+            GetParameter = @{}
+            OutputType   = "JiraUser"
+            Credential   = $Credential
+            Cmdlet       = $PSCmdlet
+        }
 
-                $parameter = @{
-                    URI        = $resourceURi
-                    Method     = "GET"
-                    OutputType = "JiraUser"
-                    Credential = $Credential
-                }
+        switch ($PSCmdLet.ParameterSetName) {
+            "Self" {
+                $parameter["URI"] = $resourceUri_Self
+
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
                 if ($result = Invoke-JiraMethod @parameter) {
-                    $restUrl = $(if (([Uri]$result.RestUrl).Query) { "&" } else { "?" }) + "expand=groups"
+                    $parameter["URI"] = $result.RestUrl
+                    $parameter["GetParameter"]["expand"] = "groups"
 
-                    $parameter["URI"] = "{0}{1}" -f $result.RestUrl, $restUrl
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
                     Invoke-JiraMethod @parameter
                 }
             }
@@ -62,12 +65,10 @@ function Get-JiraUser {
                         WriteError @writeErrorSplat
                     }
 
-                    $parameter = @{
-                        URI        = "$exactResourceUri&expand=groups" -f $_user.identify().Key, $_user.identify().Value
-                        Method     = "GET"
-                        OutputType = "JiraUser"
-                        Credential = $Credential
-                    }
+                    $parameter["URI"] = $resourceUri_Exact
+                    $parameter["GetParameter"]["expand"] = "groups"
+                    $parameter["GetParameter"][$_user.identify().Key] = $_user.identify().Value
+
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
                     Invoke-JiraMethod @parameter
                 }

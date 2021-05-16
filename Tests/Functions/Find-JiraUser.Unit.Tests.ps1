@@ -1,13 +1,12 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Find-JiraUser" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
@@ -43,27 +42,27 @@ Describe "Find-JiraUser" -Tag 'Unit' {
     ] #>
 
     #region Mocking
-    Mock Get-JiraConfigServer -ModuleName $env:BHProjectName {
+    Mock Get-JiraConfigServer -ModuleName JiraPS {
         'http://jiraserver.example.com'
     }
 
     # Responds for ?query=
     # -- This is how Jira Cloud works
-    Mock Invoke-JiraMethod -ModuleName $env:BHProjectName -ParameterFilter { $Uri -like "*/rest/api/*/user/search?query=*" } {
-        ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Uri -like "*/rest/api/*/user/search?query=*" } {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         ConvertFrom-Json -InputObject "[{`"accountId`":`"000000:00000000-0000-0000-0000-0000000000`", `"EmailAddress`": `"user@example.com`", `"displayName`":`"Jon Doe`"}]"
     }
 
     # Responds to ?username=
     # -- This is how Jira Server works
-    Mock Invoke-JiraMethod -ModuleName $env:BHProjectName -ParameterFilter { $Uri -like "*/rest/api/*/user/search?username=*" } {
-        ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Uri -like "*/rest/api/*/user/search?username=*" } {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         ConvertFrom-Json -InputObject "[{`"key`":`"jon.doe`", `"EmailAddress`": `"user@example.com`", `"displayName`":`"Jon Doe`"}]"
     }
 
     # Generic catch-all. This will throw an exception if we forgot to mock something.
-    Mock Invoke-JiraMethod -ModuleName $env:BHProjectName {
-        ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+    Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
         throw "Unidentified call to Invoke-JiraMethod"
     }
     #endregion Mocking
@@ -128,7 +127,7 @@ Describe "Find-JiraUser" -Tag 'Unit' {
 
             $assertMockCalledSplat = @{
                 CommandName     = "Invoke-JiraMethod"
-                ModuleName      = $env:BHProjectName
+                ModuleName      = JiraPS
                 ParameterFilter = {
                     $Uri -like "*/rest/api/*/user/search?query=*" -and
                     $OutputType -eq "JiraUser"
@@ -147,7 +146,7 @@ Describe "Find-JiraUser" -Tag 'Unit' {
 
             $assertMockCalledSplat = @{
                 CommandName     = "Invoke-JiraMethod"
-                ModuleName      = $env:BHProjectName
+                ModuleName      = JiraPS
                 ParameterFilter = {
                     $Uri -like "*/rest/api/*/user/search?username=*" -and
                     $OutputType -eq "JiraUser"

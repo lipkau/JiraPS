@@ -1,25 +1,20 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Get-JiraPriority" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'http://jiraserver.example.com'
 
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $restResultAll = @"
+    $restResultAll = @"
 [
     {
         "self": "$jiraServer/rest/api/2/priority/1",
@@ -59,7 +54,7 @@ Describe "Get-JiraPriority" -Tag 'Unit' {
 ]
 "@
 
-        $restResultOne = @"
+    $restResultOne = @"
 {
     "self": "$jiraServer/rest/api/2/priority/1",
     "statusColor": "#cc0000",
@@ -69,42 +64,41 @@ Describe "Get-JiraPriority" -Tag 'Unit' {
 }
 "@
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+    Mock Get-JiraConfigServer -ModuleName JiraPS {
+        Write-Output $jiraServer
+    }
 
-        Mock ConvertTo-JiraPriority -ModuleName JiraPS {
-            $InputObject
-        }
+    Mock ConvertTo-JiraPriority -ModuleName JiraPS {
+        $InputObject
+    }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/priority" } {
-            ConvertFrom-Json $restResultAll
-        }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/priority" } {
+        ConvertFrom-Json $restResultAll
+    }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/priority/1" } {
-            ConvertFrom-Json $restResultOne
-        }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/priority/1" } {
+        ConvertFrom-Json $restResultOne
+    }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
+    # Generic catch-all. This will throw an exception if we forgot to mock something.
+    Mock Invoke-JiraMethod {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        throw "Unidentified call to Invoke-JiraMethod"
+    }
 
-        #############
-        # Tests
-        #############
+    #############
+    # Tests
+    #############
 
-        It "Gets all available priorities if called with no parameters" {
-            $getResult = Get-JiraPriority
-            $getResult | Should Not BeNullOrEmpty
-            $getResult.Count | Should Be 5
-        }
+    It "Gets all available priorities if called with no parameters" {
+        $getResult = Get-JiraPriority
+        $getResult | Should -Not -BeNullOrEmpty
+        $getResult.Count | Should -Be 5
+    }
 
-        It "Gets one priority if the ID parameter is supplied" {
-            $getResult = Get-JiraPriority -Id 1
-            $getResult | Should Not BeNullOrEmpty
-            @($getResult).Count | Should Be 1
-        }
+    It "Gets one priority if the ID parameter is supplied" {
+        $getResult = Get-JiraPriority -Id 1
+        $getResult | Should -Not -BeNullOrEmpty
+        @($getResult).Count | Should -Be 1
     }
 }

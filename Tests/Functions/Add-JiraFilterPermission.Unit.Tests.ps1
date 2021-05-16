@@ -1,299 +1,268 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe 'Add-JiraFilterPermission' -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
         #region Definitions
-        $jiraServer = "https://jira.example.com"
-
-        $permissionJSON = @"
+        $permissionJSON = @'
 [
-  {
+    {
     "id": 10000,
     "type": "global"
-  },
-  {
+    },
+    {
     "id": 10010,
     "type": "project",
     "project": {
-      "self": "$jiraServer/jira/rest/api/2/project/EX",
-      "id": "10000",
-      "key": "EX",
-      "name": "Example",
-      "avatarUrls": {
-        "48x48": "$jiraServer/jira/secure/projectavatar?size=large&pid=10000",
-        "24x24": "$jiraServer/jira/secure/projectavatar?size=small&pid=10000",
-        "16x16": "$jiraServer/jira/secure/projectavatar?size=xsmall&pid=10000",
-        "32x32": "$jiraServer/jira/secure/projectavatar?size=medium&pid=10000"
-      },
-      "projectCategory": {
-        "self": "$jiraServer/jira/rest/api/2/projectCategory/10000",
+        "self": "https://jira.example.com/jira/rest/api/2/project/EX",
+        "id": "10000",
+        "key": "EX",
+        "name": "Example",
+        "avatarUrls": {
+        },
+        "projectCategory": {
+        "self": "https://jira.example.com/jira/rest/api/2/projectCategory/10000",
         "id": "10000",
         "name": "FIRST",
         "description": "First Project Category"
-      },
-      "simplified": false
+        },
+        "simplified": false
     }
-  },
-  {
+    },
+    {
     "id": 10010,
     "type": "project",
     "project": {
-      "self": "$jiraServer/jira/rest/api/2/project/MKY",
-      "id": "10002",
-      "key": "MKY",
-      "name": "Example",
-      "avatarUrls": {
-        "48x48": "$jiraServer/jira/secure/projectavatar?size=large&pid=10002",
-        "24x24": "$jiraServer/jira/secure/projectavatar?size=small&pid=10002",
-        "16x16": "$jiraServer/jira/secure/projectavatar?size=xsmall&pid=10002",
-        "32x32": "$jiraServer/jira/secure/projectavatar?size=medium&pid=10002"
-      },
-      "projectCategory": {
-        "self": "$jiraServer/jira/rest/api/2/projectCategory/10000",
+        "self": "https://jira.example.com/jira/rest/api/2/project/MKY",
+        "id": "10002",
+        "key": "MKY",
+        "name": "Example",
+        "avatarUrls": {
+        },
+        "projectCategory": {
+        "self": "https://jira.example.com/jira/rest/api/2/projectCategory/10000",
         "id": "10000",
         "name": "FIRST",
         "description": "First Project Category"
-      },
-      "simplified": false
+        },
+        "simplified": false
     },
     "role": {
-      "self": "$jiraServer/jira/rest/api/2/project/MKY/role/10360",
-      "name": "Developers",
-      "id": 10360,
-      "description": "A project role that represents developers in a project",
-      "actors": [
+        "self": "https://jira.example.com/jira/rest/api/2/project/MKY/role/10360",
+        "name": "Developers",
+        "id": 10360,
+        "description": "A project role that represents developers in a project",
+        "actors": [
         {
-          "id": 10240,
-          "displayName": "jira-developers",
-          "type": "atlassian-group-role-actor",
-          "name": "jira-developers"
+            "id": 10240,
+            "displayName": "jira-developers",
+            "type": "atlassian-group-role-actor",
+            "name": "jira-developers"
         },
         {
-          "id": 10241,
-          "displayName": "Fred F. User",
-          "type": "atlassian-user-role-actor",
-          "name": "fred"
+            "id": 10241,
+            "displayName": "Fred F. User",
+            "type": "atlassian-user-role-actor",
+            "name": "fred"
         }
-      ]
+        ]
     }
-  },
-  {
+    },
+    {
     "id": 10010,
     "type": "group",
     "group": {
-      "name": "jira-administrators",
-      "self": "$jiraServer/jira/rest/api/2/group?groupname=jira-administrators"
+        "name": "jira-administrators",
+        "self": "https://jira.example.com/jira/rest/api/2/group?groupname=jira-administrators"
     }
-  }
+    }
 ]
-"@
+'@
         #endregion Definitions
 
         #region Mocks
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            $jiraServer
-        }
+        Add-CommonMocks
+        Add-MockGetJiraConfigServer
+        Add-MockGetJiraFilter
+        Add-MockGetJiraProject
+        Add-MockGetJiraRole
 
-        Mock ConvertTo-JiraFilter -ModuleName JiraPS {
-            $i = New-Object -TypeName PSCustomObject
-            $i.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
-            $i
-        }
+        Mock ConvertTo-JiraFilter -ModuleName "JiraPS" { $mockedJiraFilter }
 
-        Mock ConvertTo-JiraFilterPermission -ModuleName JiraPS {
-            $i = (ConvertFrom-Json $permissionJSON)
-            $i.PSObject.TypeNames.Insert(0, 'JiraPS.FilterPermission')
-            $i
-        }
-
-        Mock Get-JiraFilter -ModuleName JiraPS {
-            foreach ($_id in $Id) {
-                $object = New-Object -TypeName PSCustomObject -Property @{
-                    id      = $_id
-                    RestUrl = "$jiraServer/rest/api/latest/filter/$_id"
-                }
-                $object.PSObject.TypeNames.Insert(0, 'JiraPS.Filter')
-                $object
-            }
-        }
-
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/filter/*/permission" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
-            ConvertFrom-Json $permissionJSON
-        }
-
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Post' -and
+            $URI -like '*/filter/*/permission'
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
         }
         #endregion Mocks
+    }
 
-        Describe "Sanity checking" {
-            $command = Get-Command -Name Add-JiraFilterPermission
+    Describe 'Behavior testing' {
+        BeforeAll {
+            $filter = $mockedJiraFilter
 
-            defParam $command 'Filter'
-            defParam $command 'Id'
-            defParam $command 'Type'
-            defParam $command 'Value'
-            defParam $command 'Credential'
-        }
-
-        Describe "Behavior testing" {
-            It "Adds share permission to Filter Object" {
-                {
-                    Add-JiraFilterPermission -Filter (Get-JiraFilter -Id 12844) -Type "Global"
-                } | Should Not Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                ModuleName      = 'JiraPS'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
+                ParameterFilter = {
                     $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission'
+                    $URI -like '*/rest/api/*/filter/*/permission'
                 }
-
-                Assert-MockCalled -CommandName ConvertTo-JiraFilter -ModuleName JiraPS -Exactly -Times 1 -Scope It
-            }
-
-            It "Adds share permission to FilterId" {
-                {
-                    Add-JiraFilterPermission -Id 12844 -Type "Global"
-                } | Should Not Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
-                    $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission'
-                }
-
-                Assert-MockCalled -CommandName ConvertTo-JiraFilter -ModuleName JiraPS -Exactly -Times 1 -Scope It
             }
         }
 
-        Describe "Input testing" {
-            It "requires -Filter to be a JiraPS.Filter" {
-                { Add-JiraFilterPermission -Filter 1 -Type "Global" } | Should -Throw
-                { Add-JiraFilterPermission -Filter "lorem" -Type "Global" } | Should -Throw
-                { Add-JiraFilterPermission -Filter (Get-Date) -Type "Global" } | Should -Throw
+        It 'Adds global share permission to Filter Object' {
+            Add-JiraFilterPermission -Filter $filter -Global -ErrorAction Stop
 
-                { Add-JiraFilterPermission -Filter (Get-JiraFilter -Id 1) -Type "Global" } | Should -Not -Throw
+            Assert-MockCalled @assertMockCalledSplat
+        }
+
+        It 'Adds authenticated share permission to Filter Object' {
+            Add-JiraFilterPermission -Filter $filter -Authenticated -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat
+        }
+
+        It 'Adds project share permission to Filter Object' {
+            Add-JiraFilterPermission -Filter $filter -Project 'TV' -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat
+        }
+
+        It 'Adds project and role share permission to Filter Object' {
+            Add-JiraFilterPermission -Filter $filter -Project 'TV' -Role 'Administrators'  -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat
+        }
+
+        It 'Adds group share permission to Filter Object' {
+            Add-JiraFilterPermission -Filter $filter -Group 'Administrators' -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat
+        }
+    }
+
+    Describe 'Input testing' {
+        BeforeAll {
+            $filter = $mockedJiraFilter
+        }
+
+        It "can find a filter by it's Id" {
+            Add-JiraFilterPermission -Filter 12844 -Global -ErrorAction Stop
+        }
+
+        It 'fetches the Filter if an incomplete object was provided' {
+            Add-JiraFilterPermission -Filter 'My Filter' -Global -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraFilter -ModuleName 'JiraPS' -Exactly -Times 1 -Scope It
+        }
+
+        It 'uses the provided Filter when a complete object was provided' {
+            Add-JiraFilterPermission -Filter $filter -Global -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraFilter -ModuleName 'JiraPS' -Exactly -Times 0 -Scope It
+        }
+
+        It 'fetches the Project if an incomplete object was provided' {
+            Add-JiraFilterPermission -Filter $filter -Project 'TV' -ErrorAction Stop
+            Add-JiraFilterPermission -Filter $filter -Project 10001 -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraProject -ModuleName 'JiraPS' -Exactly -Times 2 -Scope It
+        }
+
+        It 'uses the provided Project when a complete object was provided' {
+            Add-JiraFilterPermission -Filter $filter -Project $mockedJiraProject -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraProject -ModuleName 'JiraPS' -Exactly -Times 0 -Scope It
+        }
+
+        It 'fetches the Role if an incomplete object was provided' {
+            Add-JiraFilterPermission -Filter $filter -Project 'TV' -Role 'Administrators' -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraRole -ModuleName 'JiraPS' -Exactly -Times 1 -Scope It
+        }
+
+        It 'uses the provided Role when a complete object was provided' {
+            Add-JiraFilterPermission -Filter $filter -Project $mockedJiraProject -Role $mockedJiraRole -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraFilter -ModuleName 'JiraPS' -Exactly -Times 0 -Scope It
+        }
+
+        It "allows for the filter's Id to be passed over the pipeline" {
+            $filter | Add-JiraFilterPermission -Global -ErrorAction Stop
+        }
+
+        It 'accepts the 5 known permission types' {
+            Add-JiraFilterPermission -Filter $filter -Global -ErrorAction Stop
+            Add-JiraFilterPermission -Filter $filter -Group 'Administrators' -ErrorAction Stop
+            Add-JiraFilterPermission -Filter $filter -Project 'TV' -ErrorAction Stop
+            Add-JiraFilterPermission -Filter $filter -Project 'TV' -Role 'Administrators' -ErrorAction Stop
+            Add-JiraFilterPermission -Filter $filter -Authenticated -ErrorAction Stop
+        }
+    }
+
+    Describe 'Forming of thr request' {
+        BeforeAll {
+            $filter = $mockedJiraFilter
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                ModuleName  = 'JiraPS'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
             }
+        }
 
-            It "allows a JiraPS.Filter to be passed over the pipeline" {
-                { Get-JiraFilter -Id 1 | Add-JiraFilterPermission -Type "Global" } | Should -Not -Throw
+        It "constructs a valid request Body for type 'Global'" {
+            Add-JiraFilterPermission -Filter $filter -Global -ErrorAction Stop
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -match '"type":"global"' -and
+                $Body -notmatch ','
             }
+        }
 
-            It "can process multiple Filters" {
-                $filters = 1..5 | ForEach-Object { Get-JiraFilter -Id 1 }
-                $filters.Count | Should -Be 5
+        It "constructs a valid request Body for type 'Authenticated'" {
+            Add-JiraFilterPermission -Filter $filter -Authenticated -ErrorAction Stop
 
-                { Add-JiraFilterPermission -Filter $filters -Type "Global" } | Should -Not -Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 5 -Scope It
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -match '"type":"authenticated"' -and
+                $Body -notmatch ','
             }
+        }
 
-            It "can find a filter by it's Id" {
-                { Add-JiraFilterPermission -Id 1 -Type "Global" } | Should -Not -Throw
+        It "constructs a valid request Body for type 'Group'" {
+            Add-JiraFilterPermission -Filter $filter -Group 'Administrators' -ErrorAction Stop
 
-                Assert-MockCalled -CommandName Get-JiraFilter -ModuleName JiraPS -Exactly -Times 1 -Scope It
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -match '"type":"group"' -and
+                $Body -match '"groupname":"Administrators"'
             }
+        }
 
-            It "allows for the filter's Id to be passed over the pipeline" {
-                { 1, 2 | Add-JiraFilterPermission -Type "Global" } | Should -Not -Throw
+        It "constructs a valid request Body for type 'Project'" {
+            Add-JiraFilterPermission -Filter $filter -Project $mockedJiraProject -ErrorAction Stop
 
-                Assert-MockCalled -CommandName Get-JiraFilter -ModuleName JiraPS -Exactly -Times 2 -Scope It
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -match '"type":"project"' -and
+                $Body -match '"projectId":20001'
             }
+        }
 
-            It "can process mutiple FilterIds" {
-                { Add-JiraFilterPermission -Id 1, 2, 3, 4, 5 -Type "Global" } | Should -Not -Throw
+        It "constructs a valid request Body for type 'ProjectRole'" {
+            Add-JiraFilterPermission -Filter $filter -Project $mockedJiraProject -Role $mockedJiraRole -ErrorAction Stop
 
-                Assert-MockCalled -CommandName Get-JiraFilter -ModuleName JiraPS -Exactly -Times 1 -Scope It
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 5 -Scope It
-            }
-
-            It "accepts the 5 known permission types" {
-                { Add-JiraFilterPermission -Id 1 -Type "lorem" } | Should -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Invalid" } | Should -Throw
-
-                { Add-JiraFilterPermission -Id 1 -Type "Global" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Group" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Project" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "ProjectRole" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Authenticated" } | Should -Not -Throw
-            }
-
-            It "does not validate -Value" {
-                { Add-JiraFilterPermission -Id 1 -Type "Global" -Value "invalid" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Group" -Value "not a group" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Project" -Value "not a project" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "ProjectRole" -Value "not a Role" } | Should -Not -Throw
-                { Add-JiraFilterPermission -Id 1 -Type "Authenticated" -Value "invalid" } | Should -Not -Throw
-            }
-
-            It "constructs a valid request Body for type 'Global'" {
-                { Add-JiraFilterPermission -Id 12844 -Type "Global" } | Should -Not -Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
-                    $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission' -and
-                    $Body -match '"type":\s*"global"' -and
-                    $Body -notmatch ','
-                }
-            }
-
-            It "constructs a valid request Body for type 'Authenticated'" {
-                { Add-JiraFilterPermission -Id 12844 -Type "Authenticated" } | Should -Not -Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
-                    $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission' -and
-                    $Body -match '"type":\s*"authenticated"' -and
-                    $Body -notmatch ","
-                }
-            }
-
-            It "constructs a valid request Body for type 'Group'" {
-                { Add-JiraFilterPermission -Id 12844 -Type "Group" -Value "administrators" } | Should -Not -Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
-                    $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission' -and
-                    $Body -match '"type":\s*"group"' -and
-                    $Body -match '"groupname":\s*"administrators"'
-                }
-            }
-
-            It "constructs a valid request Body for type 'Project'" {
-                { Add-JiraFilterPermission -Id 12844 -Type "Project" -Value "11822" } | Should -Not -Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
-                    $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission' -and
-                    $Body -match '"type":\s*"project"' -and
-                    $Body -match '"projectId":\s*"11822"'
-                }
-            }
-
-            It "constructs a valid request Body for type 'ProjectRole'" {
-                { Add-JiraFilterPermission -Id 12844 -Type "ProjectRole" -Value "11822" } | Should -Not -Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It -ParameterFilter {
-                    $Method -eq 'Post' -and
-                    $URI -like '*/rest/api/*/filter/12844/permission' -and
-                    $Body -match '"type":\s*"projectRole"' -and
-                    $Body -match '"projectRoleId":\s*"11822"'
-                }
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $Body -match '"type":"projectRole"' -and
+                $Body -match '"projectId":20001' -and
+                $Body -match '"projectRoleId":30001'
             }
         }
     }

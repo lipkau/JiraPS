@@ -56,7 +56,7 @@ It would be best to validate the query first to make sure the query returns the 
 
 ### -Watcher
 
-Watcher that should be removed from JIRA
+Watcher that Should be removed from JIRA
 
 ```yaml
 Type: String[]
@@ -72,7 +72,7 @@ Accept wildcard characters: False
 
 ### -Issue
 
-Issue that should be updated.
+Issue that Should be updated.
 
 Can be a `JiraPS.Issue` object, issue key, or internal issue ID.
 

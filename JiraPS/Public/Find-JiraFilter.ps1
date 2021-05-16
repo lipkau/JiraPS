@@ -1,73 +1,36 @@
 function Find-JiraFilter {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( DefaultParameterSetName='ByAccountId', SupportsPaging )]
+    [CmdletBinding( SupportsPaging )]
+    [OutputType( [AtlassianPS.JiraPS.Filter] )]
     param(
-        [Parameter(ValueFromPipeline,ValueFromPipelineByPropertyName)]
-        [string[]]$Name,
+        [Parameter( ValueFromPipeline )]
+        [String[]]$Name,
 
-        [Parameter(ParameterSetName='ByAccountId',ValueFromPipelineByPropertyName)]
-        [string]$AccountId,
-
-        [Parameter(ParameterSetName='ByOwner',ValueFromPipelineByPropertyName)]
+        [Parameter()]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.User" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraUser'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Owner. Expected [JiraPS.User] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
-        [Alias('UserName')]
-        [Object]
-        $Owner,
+        [Alias('UserName', 'AccountId', 'Owner')]
+        [AtlassianPS.JiraPS.User]
+        $User,
 
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [string]$GroupName,
+        [Parameter()]
+        [Alias('GroupName')]
+        [AtlassianPS.JiraPS.Group]
+        $Group,
 
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateScript(
-            {
-                if (("JiraPS.Project" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraProject'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Project. Expected [JiraPS.Project] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
-        [Object]
+        [Parameter()]
+        [AtlassianPS.JiraPS.Project]
         $Project,
 
-        [Validateset('description','favourite','favouritedCount','jql','owner','searchUrl','sharePermissions','subscriptions','viewUrl')]
+        [Parameter()]
+        [Validateset('description', 'favourite', 'favouritedCount', 'jql', 'owner', 'searchUrl', 'sharePermissions', 'subscriptions', 'viewUrl')]
         [String[]]
-        $Fields = @('description','favourite','favouritedCount','jql','owner','searchUrl','sharePermissions','subscriptions','viewUrl'),
+        $Fields = @('description', 'favourite', 'favouritedCount', 'jql', 'owner', 'searchUrl', 'sharePermissions', 'subscriptions', 'viewUrl'),
 
-        [Validateset('description','favourite_count','is_favourite','id','name','owner')]
-        [string]$Sort,
+        [Parameter()]
+        [Validateset('description', 'favourite_count', 'is_favourite', 'id', 'name', 'owner')]
+        [String]$Sort,
 
+        [Parameter()]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]
         $Credential = [System.Management.Automation.PSCredential]::Empty
@@ -78,55 +41,56 @@ function Find-JiraFilter {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $searchURi = "$server/rest/api/latest/filter/search"
-
-        [String]$Fields = $Fields -join ','
+        $parameter = @{
+            URI          = "$server/rest/api/latest/filter/search"
+            Method       = 'GET'
+            GetParameter = @{
+                expand = $Fields -join ','
+            }
+            Paging       = $true
+            OutputType   = "JiraFilter"
+            Credential   = $Credential
+            Cmdlet       = $PSCmdlet
+        }
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
-        $parameter = @{
-            URI          = $searchURi
-            Method       = 'GET'
-            GetParameter = @{
-                expand = $Fields
-            }
-            Paging       = $true
-            Credential   = $Credential
-        }
-        if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('AccountId')) {
-            $parameter['GetParameter']['accountId'] = $AccountId
-        }
-        elseif ($PSCmdlet.ParameterSetName -eq 'ByOwner') {
-            $userObj = Get-JiraUser -InputObject $Owner -Credential $Credential -ErrorAction Stop
-            $parameter['GetParameter']['accountId'] = $userObj.AccountId
+
+
+        if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('User')) {
+            $parameter['GetParameter']["accountID"] = $User.AccountId
         }
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('GroupName')) {
-            $parameter['GetParameter']['groupName'] = $GroupName
+            $parameter['GetParameter']['groupName'] = $Group.Name
         }
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('Project')) {
-            $projectObj = Get-JiraProject -Project $Project -Credential $Credential -ErrorAction Stop
-            $parameter['GetParameter']['projectId'] = $projectObj.Id
+            if (-not $Project.Id) {
+                $Project = Get-JiraProject -Project $Project -Credential $Credential -ErrorAction Stop
+            }
+            $parameter['GetParameter']['projectId'] = $Project.Id
         }
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('Sort')) {
             $parameter['GetParameter']['orderBy'] = $Sort
         }
+
         # Paging
         ($PSCmdlet.PagingParameters | Get-Member -MemberType Property).Name | ForEach-Object {
             $parameter[$_] = $PSCmdlet.PagingParameters.$_
         }
+
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey('Name')) {
-            foreach($_name in $Name) {
+            foreach ($_name in $Name) {
                 $parameter['GetParameter']['filterName'] = $_name
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
 
-                Write-Output (Invoke-JiraMethod @parameter | ConvertTo-JiraFilter)
+                Invoke-JiraMethod @parameter
             }
         }
         else {
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
 
-            Write-Output (Invoke-JiraMethod @parameter | ConvertTo-JiraFilter)
+            Invoke-JiraMethod @parameter
         }
 
     }

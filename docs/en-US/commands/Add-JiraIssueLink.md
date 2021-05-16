@@ -42,7 +42,7 @@ Creates a link "is part of" between TEST-01 and TEST-10
 
 ### -Issue
 
-Issue which should be linked.
+Issue which Should be linked.
 
 Can be a `JiraPS.Issue` object, issue key, or internal issue ID.
 
@@ -149,8 +149,8 @@ For more information, see about_CommonParameters (http://go.microsoft.com/fwlink
 
 ### [JiraPS.Issue[]]
 
-The JIRA issue that should be linked
-The JIRA issue link that should be used
+The JIRA issue that Should be linked
+The JIRA issue link that Should be used
 
 ## OUTPUTS
 

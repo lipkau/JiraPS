@@ -1,6 +1,6 @@
 function Invoke-JiraIssueTransition {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
         [ValidateNotNullOrEmpty()]
@@ -35,7 +35,7 @@ function Invoke-JiraIssueTransition {
         [PSCustomObject]
         $Fields,
 
-        [Object]
+        [AtlassianPS.JiraPS.User]
         $Assignee,
 
         [String]
@@ -99,46 +99,24 @@ function Invoke-JiraIssueTransition {
         }
 
         if ($Assignee) {
-            if ($Assignee -eq 'Unassigned') {
-                <#
-                  #ToDo:Deprecated
-                  This behavior should be deprecated
-                #>
+            if ($Assignee.Key -eq 'Unassigned') {
                 Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] 'Unassigned' String passed. Issue will be assigned to no one."
-                $assigneeString = ""
-                $validAssignee = $true
+                $assignMap = @{ 'name' = "" }
             }
+            # TODO: with what string can the assign be set to "automatic"?
             else {
-                if ($assigneeObj = Resolve-JiraUser -InputObject $Assignee -Credential $Credential -Exact) {
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] User found (name=[$($assigneeObj.Name)],RestUrl=[$($assigneeObj.RestUrl)])"
-                    $assigneeString = $assigneeObj.Name
-                    $validAssignee = $true
-                }
-                else {
-                    $exception = ([System.ArgumentException]"Invalid value for Parameter")
-                    $errorId = 'ParameterValue.InvalidAssignee'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $Assignee
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Unable to validate Jira user [$Assignee]. Use Get-JiraUser for more details."
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                }
+                $assignMap = @{ $Assignee.identify()["key"] = $Assignee.identify()["value"] }
             }
-        }
 
-        if ($validAssignee) {
-            Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Updating Assignee"
             $requestBody += @{
                 'fields' = @{
-                    'assignee' = @{
-                        'name' = $assigneeString
-                    }
+                    'assignee' = $assignMap
                 }
             }
         }
 
         $requestBody += @{
-            'update' = @{}
+            'update' = @{ }
         }
 
         if ($Fields) {

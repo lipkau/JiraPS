@@ -1,33 +1,25 @@
-﻿function Get-JiraVersion {
+function Get-JiraVersion {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( SupportsPaging, DefaultParameterSetName = 'byId' )]
+    [CmdletBinding( SupportsPaging, DefaultParameterSetName = 'byVersion' )]
+    [OutputType( [AtlassianPS.JiraPS.Version] )]
     param(
-        [Parameter( Mandatory, ParameterSetName = 'byId' )]
-        [Int[]]
-        $Id,
+        [Parameter( Mandatory, ValueFromPipeline, ParameterSetName = 'byVersion' )]
+        [Alias('Id')]
+        [AtlassianPS.JiraPS.Version]
+        $Version,
 
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'byInputVersion' )]
-        [PSTypeName('JiraPS.Version')]
-        $InputVersion,
-
-        [Parameter( Position = 0, Mandatory , ParameterSetName = 'byProject' )]
+        [Parameter( Mandatory , ValueFromPipeline, ParameterSetName = 'byProject' )]
         [Alias('Key')]
-        [String[]]
+        [AtlassianPS.JiraPS.Project[]]
         $Project,
 
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'byInputProject' )]
-        [PSTypeName('JiraPS.Project')]
-        $InputProject,
-
         [Parameter( ParameterSetName = 'byProject' )]
-        [Parameter( ParameterSetName = 'byInputProject' )]
-        [Alias('Versions')]
         [String[]]
         $Name = "*",
 
-        [Parameter( ParameterSetName = 'byProject')]
-        [Parameter( ParameterSetName = 'byInputProject')]
-        [ValidateSet("sequence",
+        [Parameter( ParameterSetName = 'byProject' )]
+        [ValidateSet(
+            "sequence",
             "name",
             "startDate",
             "releaseDate"
@@ -35,6 +27,8 @@
         [String]
         $Sort = "name",
 
+        [Parameter()]
+        [ValidateRange(1, [UInt32]::MaxValue)]
         [UInt32]
         $PageSize = $script:DefaultPageSize,
 
@@ -56,29 +50,32 @@
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        $ParameterSetName = ''
         switch ($PsCmdlet.ParameterSetName) {
-            'byInputProject' { $Project = $InputProject.Key; $ParameterSetName = 'byProject' }
-            'byInputVersion' { $Id = $InputVersion.Id; $ParameterSetName = 'byId' }
-            'byProject' { $ParameterSetName = 'byProject' }
-            'byId' { $ParameterSetName = 'byId' }
-        }
-
-        switch ($ParameterSetName) {
             "byId" {
-                foreach ($_id in $ID) {
-                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_id]"
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_id [$_id]"
+                foreach ($_version in $Version) {
+                    Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_version]"
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_version [$_version]"
+
+                    if (-not $_version) {
+                        $writeErrorSplat = @{
+                            Exception    = "Missing property for identification"
+                            ErrorId      = "InvalidData.Version.MissingIdentificationProperty"
+                            Category     = "InvalidData"
+                            Message      = "Version needs to be identifiable by Id. Id was missing."
+                            TargetObject = $_version
+                        }
+                        WriteError @writeErrorSplat
+                        return
+                    }
 
                     $parameter = @{
-                        URI        = $resourceURi -f "version/$_id"
+                        URI        = $resourceURi -f "version/$($_version.id)"
                         Method     = "GET"
+                        OutputType = "JiraVersion"
                         Credential = $Credential
                     }
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                    $result = Invoke-JiraMethod @parameter
-
-                    Write-Output (ConvertTo-JiraVersion -InputObject $result)
+                    Invoke-JiraMethod @parameter
                 }
             }
             "byProject" {
@@ -86,10 +83,20 @@
                     Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_project]"
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_project [$_project]"
 
-                    $projectData = Get-JiraProject -Project $_project -Credential $Credential
+                    if (-not $_project) {
+                        $writeErrorSplat = @{
+                            Exception    = "Missing property for identification"
+                            ErrorId      = "InvalidData.Project.MissingIdentificationProperty"
+                            Category     = "InvalidData"
+                            Message      = "Project needs to be identifiable by Key. Key was missing."
+                            TargetObject = $_project
+                        }
+                        WriteError @writeErrorSplat
+                        return
+                    }
 
                     $parameter = @{
-                        URI          = $resourceURi -f "project/$($projectData.key)/version"
+                        URI          = $resourceURi -f "project/$($_project.key)/version"
                         Method       = "GET"
                         GetParameter = @{
                             orderBy    = $Sort

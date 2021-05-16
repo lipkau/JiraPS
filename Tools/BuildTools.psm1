@@ -1,19 +1,21 @@
 #requires -Modules @{ModuleName='PowerShellGet';ModuleVersion='1.6.0'}
 
-[CmdletBinding()]
+[CmdletBinding( )]
 param()
 
 function Invoke-Init {
     [Alias("Init")]
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param()
     begin {
         Set-BuildEnvironment -BuildOutput '$ProjectPath/Release' -ErrorAction SilentlyContinue
+        $env:BIisBuild = $true
         Add-ToModulePath -Path $env:BHBuildOutput
 
         # github's PAT is stored to ~\.git-credentials within the Release Pipeline
         # to avoid it being passed as parameter
 
+        # TODO: FIX!!!
         git config --global user.email "support@atlassianps.net"
         git config --global user.name "AtlassianPS Automated User"
         git config --global credential.helper "store --file ~/.git-credentials"
@@ -55,7 +57,7 @@ function Add-ToModulePath ([String]$Path) {
 }
 
 function Install-Dependency {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [ValidateSet("CurrentUser", "AllUsers")]
         $Scope = "CurrentUser"
@@ -66,7 +68,8 @@ function Install-Dependency {
     try {
         Set-PSRepository PSGallery -InstallationPolicy Trusted
         $RequiredModules | Install-Module -Scope $Scope -Repository PSGallery -SkipPublisherCheck -AllowClobber
-    } finally {
+    }
+    finally {
         Set-PSRepository PSGallery -InstallationPolicy $Policy
     }
     $RequiredModules | Import-Module
@@ -89,7 +92,7 @@ function Get-FileEncoding {
         https://gist.github.com/indented-automation/8e603144167c7acca4dd8f653d47441e
     #>
 
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [OutputType('EncodingInfo')]
     param (
         # The path to a file to analyze.
@@ -100,17 +103,17 @@ function Get-FileEncoding {
 
         # Test the file against a small set of signature definitions for binary file types.
         #
-        # Identification should be treated as tentative. Several file formats cannot be identified using the sequence at the start alone.
+        # Identification Should be treated as tentative. Several file formats cannot be identified using the sequence at the start alone.
         [Switch]$IncludeBinary
     )
 
     begin {
         $signatures = [Ordered]@{
             'UTF32-LE'   = 'FF-FE-00-00'
-            'UTF32-BE'   = '00-00-FE-FF'
+            'UTF32be'    = '00-00-FE-FF'
             'UTF8-BOM'   = 'EF-BB-BF'
             'UTF16-LE'   = 'FF-FE'
-            'UTF16-BE'   = 'FE-FF'
+            'UTF16be'    = 'FE-FF'
             'UTF7'       = '2B-2F-76-38', '2B-2F-76-39', '2B-2F-76-2B', '2B-2F-76-2F'
             'UTF1'       = 'F7-64-4C'
             'UTF-EBCDIC' = 'DD-73-66-73'
@@ -215,9 +218,9 @@ function Remove-Utf8Bom {
         https://gist.github.com/indented-automation/5f6b87f31c438f14905f62961025758b
     #>
     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseShouldProcessForStateChangingFunctions', '')]
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param (
-        # The path to a file which should be updated.
+        # The path to a file which Should be updated.
         [Parameter(Mandatory, Position = 1, ValueFromPipeline, ValueFromPipelineByPropertyName)]
         [ValidateScript( { Test-Path $_ -PathType Leaf } )]
         [Alias('FullName')]

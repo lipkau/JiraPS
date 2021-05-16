@@ -1,135 +1,129 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Format-Jira" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $n = [System.Environment]::NewLine
+    $obj = [PSCustomObject] @{
+        A = '123'
+        B = '456'
+        C = '789'
+    }
 
-        . "$PSScriptRoot/../Shared.ps1"
+    $obj2 = [PSCustomObject] @{
+        A = '12345'
+        B = '12345'
+        C = '12345'
+        D = '12345'
+    }
 
-        $n = [System.Environment]::NewLine
-        $obj = [PSCustomObject] @{
-            A = '123'
-            B = '456'
-            C = '789'
+    It "Translates an object into a String" {
+
+        $expected = "||A||B||C||$n|123|456|789|"
+
+        $string = Format-Jira -InputObject $obj
+        $string | Should -Be $expected
+    }
+
+    It "Handles positional parameters correctly" {
+        $expected = "||A||B||C||$n|123|456|789|"
+
+        Format-Jira -Property A, B, C $obj | Should -Be $expected
+        Format-Jira A, B, C $obj | Should -Be $expected
+    }
+
+    It "Handles pipeline input correctly" {
+        $expected = "||A||B||C||D||$n|12345|12345|12345|12345|"
+
+        $obj2 | Format-Jira | Should -Be $expected
+    }
+
+    It "Accepts multiple input objects" {
+
+        $expected1 = "||A||B||C||$n|123|456|789|$n|12345|12345|12345|"
+
+        $expected2 = "||A||B||C||D||$n|12345|12345|12345|12345|$n|123|456|789| |"
+
+        $obj, $obj2 | Format-Jira | Should -Be $expected1
+        $obj2, $obj | Format-Jira | Should -Be $expected2
+    }
+
+    It "Returns only selected properties if the -Property argument is passed" {
+        Mock Get-Process {
+            # Rather than actually running Get-Process, we'll use a known example of what
+            # its output *could* be, so we can produce repeatable results.
+            [PSCustomObject] @{
+                CompanyName = 'Microsoft Corporation'
+                Handle      = 5368
+                Id          = 4496
+                MachineName = '.'
+                Name        = 'explorer'
+                Path        = 'C:\Windows\Explorer.EXE'
+            }
         }
 
-        $obj2 = [PSCustomObject] @{
-            A = '12345'
-            B = '12345'
-            C = '12345'
-            D = '12345'
-        }
+        $expected1 = "||Name||Id||$n|explorer|4496|"
+        $expected2 = "||Name||CompanyName||Id||MachineName||Handle||$n|explorer|Microsoft Corporation|4496|.|5368|"
 
-        It "Translates an object into a String" {
+        Get-Process | Format-Jira -Property Name, Id | Should -Be $expected1
+        Get-Process | Format-Jira -Property Name, CompanyName, Id, MachineName, Handle | Should -Be $expected2
+    }
 
-            $expected = "||A||B||C||$n|123|456|789|"
-
-            $string = Format-Jira -InputObject $obj
-            $string | Should Be $expected
-        }
-
-        It "Handles positional parameters correctly" {
-            $expected = "||A||B||C||$n|123|456|789|"
-
-            Format-Jira -Property A, B, C $obj | Should Be $expected
-            Format-Jira A, B, C $obj | Should Be $expected
-        }
-
-        It "Handles pipeline input correctly" {
-            $expected = "||A||B||C||D||$n|12345|12345|12345|12345|"
-
-            $obj2 | Format-Jira | Should Be $expected
-        }
-
-        It "Accepts multiple input objects" {
-
-            $expected1 = "||A||B||C||$n|123|456|789|$n|12345|12345|12345|"
-
-            $expected2 = "||A||B||C||D||$n|12345|12345|12345|12345|$n|123|456|789| |"
-
-            $obj, $obj2 | Format-Jira | Should Be $expected1
-            $obj2, $obj | Format-Jira | Should Be $expected2
-        }
-
-        It "Returns only selected properties if the -Property argument is passed" {
-            Mock Get-Process {
-                # Rather than actually running Get-Process, we'll use a known example of what
-                # its output *could* be, so we can produce repeatable results.
-                [PSCustomObject] @{
-                    CompanyName = 'Microsoft Corporation'
-                    Handle      = 5368
-                    Id          = 4496
-                    MachineName = '.'
-                    Name        = 'explorer'
-                    Path        = 'C:\Windows\Explorer.EXE'
-                }
+    It "Returns an object's default properties if the -Property argument is not passed" {
+        Mock Get-Process {
+            $obj = [PSCustomObject] @{
+                CompanyName = 'Microsoft Corporation'
+                Handle      = 5368
+                Id          = 4496
+                MachineName = '.'
+                Name        = 'explorer'
+                Path        = 'C:\Windows\Explorer.EXE'
             }
 
-            $expected1 = "||Name||Id||$n|explorer|4496|"
-            $expected2 = "||Name||CompanyName||Id||MachineName||Handle||$n|explorer|Microsoft Corporation|4496|.|5368|"
+            # Since we're mocking this with a PSCustomObject, we need to define its default property set
+            [String[]] $DefaultProperties = @('Name', 'Id')
+            $defaultPropertySet = New-Object -TypeName System.Management.Automation.PSPropertySet -ArgumentList 'DefaultDisplayPropertySet', $DefaultProperties
+            $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]] $defaultPropertySet
+            Add-Member -InputObject $obj -MemberType MemberSet -Name PSStandardMembers -Value $PSStandardMembers -Force
 
-            Get-Process | Format-Jira -Property Name, Id | Should Be $expected1
-            Get-Process | Format-Jira -Property Name, CompanyName, Id, MachineName, Handle | Should Be $expected2
+            Write-Output $obj
         }
 
-        It "Returns an object's default properties if the -Property argument is not passed" {
-            Mock Get-Process {
-                $obj = [PSCustomObject] @{
-                    CompanyName = 'Microsoft Corporation'
-                    Handle      = 5368
-                    Id          = 4496
-                    MachineName = '.'
-                    Name        = 'explorer'
-                    Path        = 'C:\Windows\Explorer.EXE'
-                }
+        $expected = "||Name||Id||$n|explorer|4496|"
 
-                # Since we're mocking this with a PSCustomObject, we need to define its default property set
-                [String[]] $DefaultProperties = @('Name', 'Id')
-                $defaultPropertySet = New-Object -TypeName System.Management.Automation.PSPropertySet -ArgumentList 'DefaultDisplayPropertySet', $DefaultProperties
-                $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]] $defaultPropertySet
-                Add-Member -InputObject $obj -MemberType MemberSet -Name PSStandardMembers -Value $PSStandardMembers -Force
+        Get-Process | Format-Jira | Should -Be $expected
+    }
 
-                Write-Output $obj
+    It "Returns ALL object's default properties if the -Property argument is not passed" {
+        Mock Get-Process {
+            $obj = [PSCustomObject] @{
+                CompanyName = 'Microsoft Corporation'
+                Handle      = 5368
+                Id          = 4496
+                MachineName = '.'
+                Name        = 'explorer'
+                Path        = 'C:\Windows\Explorer.EXE'
             }
 
-            $expected = "||Name||Id||$n|explorer|4496|"
+            [String[]] $DefaultProperties = @('Name', 'Id')
+            $defaultPropertySet = New-Object -TypeName System.Management.Automation.PSPropertySet -ArgumentList 'DefaultDisplayPropertySet', $DefaultProperties
+            $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]] $defaultPropertySet
+            Add-Member -InputObject $obj -MemberType MemberSet -Name PSStandardMembers -Value $PSStandardMembers -Force
 
-            Get-Process | Format-Jira | Should Be $expected
+            Write-Output $obj
         }
 
-        It "Returns ALL object's default properties if the -Property argument is not passed" {
-            Mock Get-Process {
-                $obj = [PSCustomObject] @{
-                    CompanyName = 'Microsoft Corporation'
-                    Handle      = 5368
-                    Id          = 4496
-                    MachineName = '.'
-                    Name        = 'explorer'
-                    Path        = 'C:\Windows\Explorer.EXE'
-                }
+        $expected = "||CompanyName||Handle||Id||MachineName||Name||Path||$n|Microsoft Corporation|5368|4496|.|explorer|C:\Windows\Explorer.EXE|"
 
-                [String[]] $DefaultProperties = @('Name', 'Id')
-                $defaultPropertySet = New-Object -TypeName System.Management.Automation.PSPropertySet -ArgumentList 'DefaultDisplayPropertySet', $DefaultProperties
-                $PSStandardMembers = [System.Management.Automation.PSMemberInfo[]] $defaultPropertySet
-                Add-Member -InputObject $obj -MemberType MemberSet -Name PSStandardMembers -Value $PSStandardMembers -Force
-
-                Write-Output $obj
-            }
-
-            $expected = "||CompanyName||Handle||Id||MachineName||Name||Path||$n|Microsoft Corporation|5368|4496|.|explorer|C:\Windows\Explorer.EXE|"
-
-            Get-Process | Format-Jira -Property * | Should Be $expected
-        }
+        Get-Process | Format-Jira -Property * | Should -Be $expected
     }
 }

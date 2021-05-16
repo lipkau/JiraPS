@@ -1,29 +1,24 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Get-JiraGroup" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'http://jiraserver.example.com'
 
-        . "$PSScriptRoot/../Shared.ps1"
+    $testGroupName = "Test Group"
+    $testGroupNameEscaped = "Test%20Group"
+    $testGroupSize = 1
 
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $testGroupName = 'Test Group'
-        $testGroupNameEscaped = ConvertTo-URLEncoded $testGroupName
-        $testGroupSize = 1
-
-        $restResult = @"
+    $restResult = @"
 {
     "name": "$testGroupName",
     "self": "$jiraServer/rest/api/2/group?groupname=$testGroupName",
@@ -38,35 +33,36 @@ Describe "Get-JiraGroup" -Tag 'Unit' {
 }
 "@
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+    Mock Get-JiraConfigServer -ModuleName JiraPS {
+        Write-Output $jiraServer
+    }
 
-        # Searching for a group.
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/group?groupname=$testGroupNameEscaped" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            ConvertFrom-Json -InputObject $restResult
-        }
+    # Searching for a group.
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Get' -and $URI -eq "$jiraServer/rest/api/latest/group?groupname=$testGroupNameEscaped" } {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        ConvertFrom-Json -InputObject $restResult
+    }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
+    # Generic catch-all. This will throw an exception if we forgot to mock something.
+    Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        throw "Unidentified call to Invoke-JiraMethod"
+    }
 
-        Mock ConvertTo-JiraGroup { $InputObject }
+    Mock ConvertTo-JiraGroup { $InputObject }
 
-        #############
-        # Tests
-        #############
+    #############
+    # Tests
+    #############
 
-        It "Gets information about a provided Jira group" {
-            $getResult = Get-JiraGroup -GroupName $testGroupName
-            $getResult | Should Not BeNullOrEmpty
-        }
+    It "Gets information about a provided Jira group" {
+        $getResult = Get-JiraGroup -GroupName $testGroupName
+        $getResult | Should -Not -BeNullOrEmpty
+    }
 
-        It "Uses ConvertTo-JiraGroup to beautify output" {
-            Assert-MockCalled 'ConvertTo-JiraGroup'
-        }
+    It "Uses ConvertTo-JiraGroup to beautify output" {
+        Get-JiraGroup -GroupName $testGroupName
+
+        Assert-MockCalled 'ConvertTo-JiraGroup'
     }
 }

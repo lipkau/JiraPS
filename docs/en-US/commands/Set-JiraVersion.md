@@ -159,7 +159,7 @@ Accept wildcard characters: False
 
 ### -Project
 
-The new Project where this version should be in.
+The new Project where this version Should be in.
 
 This can be the ID of the Project, or the Project Object
 

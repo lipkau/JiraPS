@@ -53,13 +53,12 @@ function New-JiraUser {
             URI        = $resourceURi
             Method     = "POST"
             Body       = ConvertTo-Json -InputObject $requestBody
+            OutputType = "JiraUser"
             Credential = $Credential
         }
         Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
         if ($PSCmdlet.ShouldProcess($UserName, "Creating new User on JIRA")) {
-            $result = Invoke-JiraMethod @parameter
-
-            Write-Output (ConvertTo-JiraUser -InputObject $result)
+            Invoke-JiraMethod @parameter
         }
     }
 

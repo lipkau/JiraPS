@@ -96,7 +96,7 @@ Accept wildcard characters: False
 
 ### -PassThru
 
-Whether output should be provided after invoking this function.
+Whether output Should be provided after invoking this function.
 
 ```yaml
 Type: SwitchParameter
@@ -152,7 +152,7 @@ For more information, see about_CommonParameters (http://go.microsoft.com/fwlink
 
 ### [JiraPS.Group[]]
 
-Group(s) to which users should be added
+Group(s) to which users Should be added
 
 ## OUTPUTS
 

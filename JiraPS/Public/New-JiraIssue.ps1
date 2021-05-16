@@ -1,47 +1,52 @@
 function New-JiraIssue {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( SupportsShouldProcess )]
+    [CmdletBinding( SupportsShouldProcess, DefaultParameterSetName = "byIssue" )]
     param(
-        [Parameter( Mandatory, ValueFromPipelineByPropertyName )]
-        [String]
+        [Parameter( Mandatory, ValueFromPipeline, ParameterSetName = "byIssue" )]
+        [AtlassianPS.JiraPS.Issue]
+        $Issue,
+
+        [Parameter( Mandatory, ParameterSetName = "byProperties" )]
+        [AtlassianPS.JiraPS.Project]
         $Project,
 
-        [Parameter( Mandatory, ValueFromPipelineByPropertyName )]
-        [String]
-        $IssueType,
+        [Parameter( Mandatory, ParameterSetName = "byProperties" )]
+        [Alias("IssueType")]
+        [Atlassian.JiraPS.Type]
+        $Type,
 
-        [Parameter( Mandatory, ValueFromPipelineByPropertyName )]
+        [Parameter( Mandatory, ParameterSetName = "byProperties" )]
         [String]
         $Summary,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [Int]
         $Priority,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [String]
         $Description,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [AllowNull()]
         [AllowEmptyString()]
-        [String]
+        [AtlassianPS.JiraPS.User]
         $Reporter,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [String[]]
         $Labels,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [String]
         $Parent,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [Alias('FixVersions')]
         [String[]]
         $FixVersion,
 
-        [Parameter( ValueFromPipelineByPropertyName )]
+        [Parameter( ParameterSetName = "byProperties" )]
         [PSCustomObject]
         $Fields,
 
@@ -53,23 +58,21 @@ function New-JiraIssue {
 
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
+
+        $server = Get-JiraConfigServer -ErrorAction Stop
+
+        $resourceURi = "$server/rest/api/latest/issue"
     }
 
     process {
-        $server = Get-JiraConfigServer -ErrorAction Stop -Debug:$false
-
-        $createmeta = Get-JiraIssueCreateMetadata -Project $Project -IssueType $IssueType -Credential $Credential -ErrorAction Stop -Debug:$false
-
-        $resourceURi = "$server/rest/api/latest/issue"
-
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
+        $createmeta = Get-JiraIssueCreateMetadata -Project $Project -IssueType $IssueType -Credential $Credential -ErrorAction Stop -Debug:$false
         $ProjectObj = Get-JiraProject -Project $Project -Credential $Credential -ErrorAction Stop -Debug:$false
-        $issueTypeObj = $projectObj.IssueTypes | Where-Object -FilterScript {$_.Id -eq $IssueType -or $_.Name -eq $IssueType}
+        $issueTypeObj = $projectObj.IssueTypes | Where-Object -FilterScript { $_.Id -eq $IssueType -or $_.Name -eq $IssueType }
 
-        if ($null -eq $issueTypeObj.Id)
-        {
+        if ($null -eq $issueTypeObj.Id) {
             $errorMessage = @{
                 Category         = "InvalidResult"
                 CategoryActivity = "Validating parameters"
@@ -79,13 +82,13 @@ function New-JiraIssue {
         }
 
         $requestBody = @{
-            "project"   = @{"id" = $ProjectObj.Id}
-            "issuetype" = @{"id" = [String] $IssueTypeObj.Id}
+            "project"   = @{ "id" = $ProjectObj.Id }
+            "issuetype" = @{ "id" = [String] $IssueTypeObj.Id }
             "summary"   = $Summary
         }
 
         if ($Priority) {
-            $requestBody["priority"] = @{"id" = [String] $Priority}
+            $requestBody["priority"] = @{ "id" = [String] $Priority }
         }
 
         if ($Description) {
@@ -93,15 +96,11 @@ function New-JiraIssue {
         }
 
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Reporter")) {
-            $requestBody["reporter"] = @{"name" = "$Reporter"}
-        }
-        elseif ($ProjectObj.Style -eq "next-gen"){
-            Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Adding reporter as next-gen projects must have reporter set."
-            $requestBody["reporter"] = @{"name" = "$((Get-JiraUser -Credential $Credential).Name)"}
+            $requestBody["reporter"] = @{ id = $Reporter.identify()["value"] }
         }
 
         if ($Parent) {
-            $requestBody["parent"] = @{"key" = $Parent}
+            $requestBody["parent"] = @{"key" = $Parent }
         }
 
         if ($Labels) {
@@ -179,7 +178,7 @@ function New-JiraIssue {
                 # REST result will look something like this:
                 # {"id":"12345","key":"IT-3676","self":"http://jiraserver.example.com/rest/api/latest/issue/12345"}
                 # This will fetch the created issue to return it with all it'a properties
-                Write-Output (Get-JiraIssue -Key $result.Key -Credential $Credential)
+                Get-JiraIssue -Issue $result.Key -Credential $Credential
             }
         }
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Complete"

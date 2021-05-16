@@ -16,8 +16,9 @@ Removes an existing user from JIRA
 ## SYNTAX
 
 ```powershell
-Remove-JiraUser [-User] <Object[]> [[-Credential] <PSCredential>] [-Force] [-WhatIf] [-Confirm]
- [<CommonParameters>]
+Remove-JiraUser [-User] <AtlassianPS.JiraPS.User[]>
+[[-Credential] <PSCredential>] [-Force] [-WhatIf] [-Confirm]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -38,6 +39,14 @@ Remove-JiraUser -UserName testUser
 
 Removes the JIRA user TestUser
 
+### EXAMPLE 2
+
+```powershell
+Get-JiraUser jon.doe | Remove-JiraUser
+```
+
+Removes the JIRA user Jon Doe
+
 ## PARAMETERS
 
 ### -User
@@ -45,7 +54,7 @@ Removes the JIRA user TestUser
 User Object or ID to delete.
 
 ```yaml
-Type: Object[]
+Type: AtlassianPS.JiraPS.User[]
 Parameter Sets: (All)
 Aliases: UserName
 
@@ -124,18 +133,21 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction,
+-ErrorVariable, -InformationAction, -InformationVariable, -OutVariable,
+-OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### [JiraPS.User] / [String]
+### [AtlassianPS.JiraPS.User]
 
 ## OUTPUTS
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 
@@ -144,3 +156,5 @@ If neither are supplied, this function will run with anonymous access to JIRA.
 [New-JiraUser](../New-JiraUser/)
 
 [Get-JiraUser](../Get-JiraUser/)
+
+[Find-JiraUser](../Find-JiraUser/)

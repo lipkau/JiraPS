@@ -1,45 +1,24 @@
 function Add-JiraIssueWorklog {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( SupportsShouldProcess )]
+    [CmdletBinding( SupportsShouldProcess, DefaultParameterSetName = 'auto' )]
     param(
-        [Parameter( Mandatory )]
-        [ValidateNotNullOrEmpty()]
-        [String]
-        $Comment,
-
-        [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
-        [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Issue" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraIssue'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Issue. Expected [JiraPS.Issue] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
+        [Parameter( Mandatory, ValueFromPipeline )]
         [Alias('Key')]
-        [Object]
+        [AtlassianPS.JiraPS.Issue]
         $Issue,
 
-        [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
+        [Parameter( Mandatory, ValueFromPipeline )]
         [TimeSpan]
         $TimeSpent,
 
-        [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
+        [Parameter( Mandatory, ValueFromPipeline )]
         [DateTime]
         $DateStarted,
+
+        [Parameter( Mandatory )]
+        [ValidateNotNullOrEmpty()]
+        [AtlassianPS.JiraPS.Comment]
+        $Comment,
 
         [ValidateSet('All Users', 'Developers', 'Administrators')]
         [String]
@@ -53,41 +32,28 @@ function Add-JiraIssueWorklog {
 
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
-
-        $resourceURi = "{0}/worklog"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        # Find the proper object for the Issue
-        $issueObj = Resolve-JiraIssueObject -InputObject $Issue -Credential $Credential
-
-        if (-not $issueObj) {
-            $errorMessage = @{
-                Category         = "ObjectNotFound"
-                CategoryActivity = "Searching for Issue"
-                Message          = "Invalid Issue provided."
-            }
-            Write-Error @errorMessage
-        }
+        $IssueUrl = Resolve-JiraIssueUrl -Issue $Issue
 
         # Harmonize DateStarted:
-        # `Get-Date -Date "01.01.2000"` does not return the local timezone
-        # which is required by the API
+        # `Get-Date -Date "01.01.2000"` does not return the local timezone which is required by the API
         $DateStarted = [DateTime]::new($DateStarted.Ticks, 'Local')
 
         $requestBody = @{
-            'comment'          = $Comment
+            'comment'          = $Comment.Body
             # We need to fix the date with a RegEx replace because the API does not like:
-            # * miliseconds with more than 3 digits
-            # * `:` in the TimeZone
+            #   * miliseconds with more than 3 digits
+            #   * `:` in the TimeZone
             'started'          = $DateStarted.ToString("o") -replace "\.(\d{3})\d*([\+\-]\d{2}):", ".`$1`$2"
             'timeSpentSeconds' = $TimeSpent.TotalSeconds.ToString()
         }
 
-        # If the visible role should be all users, the visibility block shouldn't be passed at
+        # If the visible role Should -Be all users, the visibility block shouldn't be passed at
         # all. JIRA returns a 500 Internal Server Error if you try to pass this block with a
         # value of "All Users".
         if ($VisibleRole -ne 'All Users') {
@@ -98,16 +64,15 @@ function Add-JiraIssueWorklog {
         }
 
         $parameter = @{
-            URI        = $resourceURi -f $issueObj.RestURL
+            URI        = "$IssueUrl/worklog"
             Method     = "POST"
             Body       = ConvertTo-Json -InputObject $requestBody
             Credential = $Credential
+            Cmdlet     = $PSCmdlet
         }
         Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-        if ($PSCmdlet.ShouldProcess($issueObj.Key)) {
-            $result = Invoke-JiraMethod @parameter
-
-            Write-Output (ConvertTo-JiraWorklogitem -InputObject $result)
+        if ($PSCmdlet.ShouldProcess($issue.ToString(), "Adding worklog item")) {
+            Invoke-JiraMethod @parameter
         }
     }
 

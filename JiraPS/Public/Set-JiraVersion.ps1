@@ -1,77 +1,49 @@
-﻿function Set-JiraVersion {
+function Set-JiraVersion {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
+    [OutputType( [AtlassianPS.JiraPS.Version] )]
     param(
         [Parameter( Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Version" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraVersion'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Version. Expected [JiraPS.Version] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
-        [Object[]]
+        [AtlassianPS.JiraPS.Version[]]
         $Version,
 
+        [Parameter()]
         [String]
         $Name,
 
+        [Parameter()]
         [String]
         $Description,
 
+        [Parameter()]
         [Bool]
         $Archived,
 
+        [Parameter()]
         [Bool]
         $Released,
 
+        [Parameter()]
         [DateTime]
         $ReleaseDate,
 
+        [Parameter()]
         [DateTime]
         $StartDate,
 
-        [ValidateScript(
-            {
-                if (("JiraPS.Project" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraProject'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Project. Expected [JiraPS.Project] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
-        [Object]
+        [Parameter()]
+        [AtlassianPS.JiraPS.Project]
         $Project,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]
-        $Credential = [System.Management.Automation.PSCredential]::Empty
+        $Credential = [System.Management.Automation.PSCredential]::Empty,
+
+        [Parameter()]
+        [Switch]
+        $PassThru
     )
 
     begin {
@@ -84,11 +56,13 @@
 
         foreach ($_version in $Version) {
             Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_version]"
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_version [$_version]"
+            Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Processing `$_version [$_version]"
 
-            $versionObj = Get-JiraVersion -Id $_version.Id -Credential $Credential -ErrorAction Stop
+            if (-not $_version.RestUrl) {
+                $_version = Get-JiraVersion -Id $_version.Id -Credential $Credential -ErrorAction Stop
+            }
 
-            $requestBody = @{}
+            $requestBody = @{ }
 
             if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Name")) {
                 $requestBody["name"] = $Name
@@ -103,9 +77,10 @@
                 $requestBody["released"] = $Released
             }
             if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Project")) {
-                $projectObj = Get-JiraProject -Project $Project -Credential $Credential -ErrorAction Stop
-
-                $requestBody["projectId"] = $projectObj.Id
+                if (-not $Project.Id) {
+                    $Project = Get-JiraProject -Project $Project -Credential $Credential -ErrorAction Stop
+                }
+                $requestBody["projectId"] = $Project.Id
             }
             if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("ReleaseDate")) {
                 $requestBody["releaseDate"] = $ReleaseDate.ToString('yyyy-MM-dd')
@@ -115,16 +90,19 @@
             }
 
             $parameter = @{
-                URI        = $versionObj.RestUrl
+                URI        = $_version.RestUrl
                 Method     = "PUT"
                 Body       = ConvertTo-Json -InputObject $requestBody
+                OutputType = "JiraVersion"
                 Credential = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
             if ($PSCmdlet.ShouldProcess($Name, "Updating Version on JIRA")) {
                 $result = Invoke-JiraMethod @parameter
 
-                Write-Output (ConvertTo-JiraVersion -InputObject $result)
+                if ($PassThru) {
+                    $result
+                }
             }
         }
     }

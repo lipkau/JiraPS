@@ -61,7 +61,7 @@ Output from this function can be piped to various other functions in this module
 ### EXAMPLE 1
 
 ```powershell
-Get-JiraIssue -Key TEST-001
+Get-JiraIssue -Issue TEST-001
 ```
 
 This example fetches the issue "TEST-001".
@@ -256,7 +256,7 @@ Accept wildcard characters: False
 
 ### -PageSize
 
-How many issues should be returned per call to JIRA.
+How many issues Should be returned per call to JIRA.
 
 This parameter only has effect if `-MaxResults` is not provided or set to 0.
 

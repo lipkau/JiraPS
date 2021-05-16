@@ -1,23 +1,11 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "ConvertTo-JiraEditMetaField" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
-
-        Import-Module $env:BHManifestToTest -Force
-    }
-    AfterAll {
-        Invoke-TestCleanup
-    }
-
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $sampleJson = @'
+        $sampleObject = ConvertFrom-Json -InputObject @'
 {
     "fields": {
         "summary": {
@@ -79,36 +67,51 @@ Describe "ConvertTo-JiraEditMetaField" -Tag 'Unit' {
     }
 }
 '@
-        $sampleObject = ConvertFrom-Json -InputObject $sampleJson
+    }
 
-        $r = ConvertTo-JiraEditMetaField $sampleObject
-
-        It "Creates PSObjects out of JSON input" {
-            $r | Should Not BeNullOrEmpty
-            $r.Count | Should Be 2
+    Describe "old tests" {
+        BeforeAll {
+            $r = InModuleScope JiraPS {
+                param($sampleObject)
+                ConvertTo-JiraEditMetaField -InputObject $sampleObject
+            } -Parameters @{ sampleObject = $sampleObject }
         }
 
-        checkPsType $r[0] 'JiraPS.EditMetaField'
+        It "Creates PSObjects out of JSON input" {
+            $r | Should -Not -BeNullOrEmpty
+            $r.Count | Should -Be 2
+        }
+
+        It "is of the expected type" {
+            (Get-Member -InputObject $r[0]).TypeName | Should -Contain 'JiraPS.EditMetaField'
+        }
 
         Describe "Data validation" {
-            # Our sample JSON includes two fields: summary and priority.
-            $summary = ConvertTo-JiraEditMetaField $sampleObject | Where-Object -FilterScript { $_.Name -eq 'Summary' }
-            $priority = ConvertTo-JiraEditMetaField $sampleObject | Where-Object -FilterScript { $_.Name -eq 'Priority' }
+            BeforeAll {
+                # Our sample JSON includes two fields: summary and priority.
+                $summary = $r | Where-Object -FilterScript { $_.Name -eq 'Summary' }
+                $priority = $r | Where-Object -FilterScript { $_.Name -eq 'Priority' }
+            }
 
-            defProp $summary 'Id' 'summary'
-            defProp $summary 'Name' 'Summary'
-            defProp $summary 'HasDefaultValue' $false
-            defProp $summary 'Required' $true
-            defProp $summary 'Operations' @('set')
+            It "<property> has value <value>" -TestCases @(
+                @{property = "Id"; value = 'summary' }
+                @{property = "Name"; value = 'Summary' }
+                @{property = "HasDefaultValue"; value = $false }
+                @{property = "Required"; value = $true }
+                @{property = "Operations"; value = @('set') }
+            ) {
+                param($property, $value)
+                $summary.$property | Should -Be $value
+            }
 
             It "Defines the 'Schema' property if available" {
-                $summary.Schema | Should Not BeNullOrEmpty
-                $priority.Schema | Should Not BeNullOrEmpty
+                $summary.Schema | Should -Not -BeNullOrEmpty
+                $priority.Schema | Should -Not -BeNullOrEmpty
             }
 
             It "Defines the 'AllowedValues' property if available" {
-                $summary.AllowedValues | Should BeNullOrEmpty
-                $priority.AllowedValues | Should Not BeNullOrEmpty
+                $summary.AllowedValues | Should -BeNullOrEmpty
+                $priority.AllowedValues | Should -Not -BeNullOrEmpty
             }
         }
     }

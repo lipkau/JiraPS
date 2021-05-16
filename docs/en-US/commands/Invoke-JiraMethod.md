@@ -227,7 +227,7 @@ Accept wildcard characters: False
 
 ### -Headers
 
-Define a key-value set of HTTP headers that should be used in the call.
+Define a key-value set of HTTP headers that Should be used in the call.
 
 ```yaml
 Type: Hashtable
@@ -295,7 +295,7 @@ Accept wildcard characters: False
 
 ### -OutFile
 
-Path to the file where the response should be stored to.
+Path to the file where the response Should be stored to.
 
 This parameter does not validate the input in any way
 

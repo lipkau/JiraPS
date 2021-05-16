@@ -22,7 +22,7 @@ function Get-JiraRole {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi_ById = "$server/rest/api/latest/role"
+        $resourceURi_ById = "$server/rest/api/latest/role/"
         $resourceURi_Search = "$server/rest/api/latest/project/{0}/role"
     }
 
@@ -33,8 +33,20 @@ function Get-JiraRole {
         switch ($PSCmdlet.ParameterSetName) {
             '_ById' {
                 foreach ($_role in $Role) {
+                    if (-not $_role.Id) {
+                        $writeErrorSplat = @{
+                            Exception    = "Missing property for identification"
+                            ErrorId      = "InvalidData.Role.MissingIdentificationProperty"
+                            Category     = "InvalidData"
+                            Message      = "Role needs to be identifiable by Id. Id was missing."
+                            TargetObject = $_role
+                        }
+                        WriteError @writeErrorSplat
+                        return
+                    }
+
                     $parameter = @{
-                        Uri        = "$resourceURi_ById/$_role"
+                        Uri        = $resourceURi_ById + $_role.Id
                         Method     = "GET"
                         OutputType = "JiraRole"
                         Credential = $Credential

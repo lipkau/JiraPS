@@ -97,7 +97,7 @@ Accept wildcard characters: False
 
 ### -PassThru
 
-Whether output should be provided after invoking this function
+Whether output Should be provided after invoking this function
 
 ```yaml
 Type: SwitchParameter

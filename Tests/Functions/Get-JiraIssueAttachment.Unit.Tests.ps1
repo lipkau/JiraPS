@@ -1,27 +1,22 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Get-JiraIssueAttachment" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'http://jiraserver.example.com'
+    $issueID = 41701
+    $issueKey = 'IT-3676'
 
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-        $issueID = 41701
-        $issueKey = 'IT-3676'
-
-        $attachments = @"
+    $attachments = @"
 [
     {
         "self": "$jiraServer/rest/api/2/attachment/10013",
@@ -66,58 +61,57 @@ Describe "Get-JiraIssueAttachment" -Tag 'Unit' {
 ]
 "@
 
-        Mock Get-JiraIssue -ModuleName JiraPS {
-            $IssueObj = [PSCustomObject]@{
-                ID         = $issueID
-                Key        = $issueKey
-                RestUrl    = "$jiraServer/rest/api/latest/issue/$issueID"
-                attachment = (ConvertFrom-Json -InputObject $attachments)
-            }
-            $IssueObj.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
-            $IssueObj
+    Mock Get-JiraIssue -ModuleName JiraPS {
+        $IssueObj = [PSCustomObject]@{
+            ID         = $issueID
+            Key        = $issueKey
+            RestUrl    = "$jiraServer/rest/api/latest/issue/$issueID"
+            attachment = (ConvertFrom-Json -InputObject $attachments)
         }
+        $IssueObj.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
+        $IssueObj
+    }
 
-        Mock Resolve-JiraIssueObject -ModuleName JiraPS {
-            Get-JiraIssue -Key $Issue
-        }
+    Mock Resolve-JiraIssueObject -ModuleName JiraPS {
+        Get-JiraIssue -Issue $Issue
+    }
 
-        Mock ConvertTo-JiraAttachment -ModuleName JiraPS {
-            $InputObject
-        }
+    Mock ConvertTo-JiraAttachment -ModuleName JiraPS {
+        $InputObject
+    }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
+    # Generic catch-all. This will throw an exception if we forgot to mock something.
+    Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        throw "Unidentified call to Invoke-JiraMethod"
+    }
 
-        #############
-        # Tests
-        #############
+    #############
+    # Tests
+    #############
 
-        $issueObject = Get-JiraIssue -Key $issueKey
+    $issueObject = Get-JiraIssue -Issue $issueKey
 
-        It 'only accepts String or JiraPS.Issue as input' {
-            { Get-JiraIssueAttachment -Issue (Get-Date) } | Should Throw
-            { Get-JiraIssueAttachment -Issue (Get-ChildItem) } | Should Throw
-            { Get-JiraIssueAttachment -Issue @('foo', 'bar') } | Should Not Throw
-            { Get-JiraIssueAttachment -Issue (Get-JiraIssue -Key "foo") } | Should Not Throw
-        }
+    It 'only accepts String or JiraPS.Issue as input' {
+        { Get-JiraIssueAttachment -Issue (Get-Date) } | Should -Throw
+        { Get-JiraIssueAttachment -Issue (Get-ChildItem) } | Should -Throw
+        { Get-JiraIssueAttachment -Issue @('foo', 'bar') } | Should -Not -Throw
+        { Get-JiraIssueAttachment -Issue (Get-JiraIssue -Issue "foo") } | Should -Not -Throw
+    }
 
-        It 'takes the issue input over the pipeline' {
-            { $issueObject | Get-JiraIssueAttachment } | Should Not Throw
-            { $issueKey | Get-JiraIssueAttachment } | Should Not Throw
-        }
+    It 'takes the issue input over the pipeline' {
+        { $issueObject | Get-JiraIssueAttachment } | Should -Not -Throw
+        { $issueKey | Get-JiraIssueAttachment } | Should -Not -Throw
+    }
 
-        It 'converts the attachments to objects' {
-            $issueObject | Get-JiraIssueAttachment
-            Get-JiraIssueAttachment -Issue $issueKey
-            Assert-MockCalled -CommandName ConvertTo-JiraAttachment -Exactly 2 -Scope It
-        }
+    It 'converts the attachments to objects' {
+        $issueObject | Get-JiraIssueAttachment
+        Get-JiraIssueAttachment -Issue $issueKey
+        Assert-MockCalled -CommandName ConvertTo-JiraAttachment -Exactly 2 -Scope It
+    }
 
-        It 'filters the result by FileName' {
-            @($issueObject | Get-JiraIssueAttachment).Count | Should Be 2
-            @($issueObject | Get-JiraIssueAttachment -FileName 'foo.pdf').Count | Should Be 1
-        }
+    It 'filters the result by FileName' {
+        @($issueObject | Get-JiraIssueAttachment).Count | Should -Be 2
+        @($issueObject | Get-JiraIssueAttachment -FileName 'foo.pdf').Count | Should -Be 1
     }
 }

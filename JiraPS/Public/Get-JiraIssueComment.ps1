@@ -9,6 +9,10 @@ function Get-JiraIssueComment {
         [AtlassianPS.JiraPS.Issue]
         $Issue,
 
+        [ValidateRange(1, [UInt32]::MaxValue)]
+        [UInt32]
+        $PageSize = $script:DefaultPageSize,
+
         [Parameter()]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]

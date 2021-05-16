@@ -21,7 +21,7 @@ The simplest way to get info about an issue is using the issue's key. This is qu
 
 .. code:: PowerShell
 
-    Get-JiraIssue -Key 'TEST-1'
+    Get-JiraIssue -Issue 'TEST-1'
 
 Issue ID
 --------

@@ -1,6 +1,7 @@
 function Get-JiraServerInformation {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.ServerInfo] )]
     param(
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -23,12 +24,12 @@ function Get-JiraServerInformation {
         $parameter = @{
             URI        = $resourceURi
             Method     = "GET"
+            OutputType = 'JiraServerInfo'
             Credential = $Credential
+            Cmdlet     = $PSCmdlet
         }
         Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-        $result = Invoke-JiraMethod @parameter
-
-        Write-Output (ConvertTo-JiraServerInfo -InputObject $result)
+        Invoke-JiraMethod @parameter
     }
 
     end {

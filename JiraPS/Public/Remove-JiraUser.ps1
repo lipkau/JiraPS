@@ -4,28 +4,7 @@ function Remove-JiraUser {
     param(
         [Parameter( Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.User" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraUser'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for User. Expected [JiraPS.User] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
-        [Alias('UserName')]
-        [Object[]]
+        [AtlassianPS.JiraPS.User[]]
         $User,
 
         [Parameter()]
@@ -42,7 +21,7 @@ function Remove-JiraUser {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi = "$server/rest/api/latest/user?username={0}"
+        $resourceURi = "$server/rest/api/latest/user"
 
         if ($Force) {
             Write-DebugMessage "[Remove-JiraGroup] -Force was passed. Backing up current ConfirmPreference [$ConfirmPreference] and setting to None"
@@ -59,12 +38,15 @@ function Remove-JiraUser {
             Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_user]"
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_user [$_user]"
 
-            $userObj = Resolve-JiraUser -InputObject $_user -Credential $Credential -ErrorAction Stop
+            # TODO: validate that user has Id
 
             $parameter = @{
-                URI        = $resourceURi -f $userObj.Name
-                Method     = "DELETE"
-                Credential = $Credential
+                URI          = $resourceURi
+                Method       = "DELETE"
+                GetParameter = @{
+                    $_user.identify()["key"] = $_user.identify()["value"]
+                }
+                Credential   = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
             if ($PSCmdlet.ShouldProcess($userObj.Name, 'Remove user')) {

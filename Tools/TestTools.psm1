@@ -72,7 +72,7 @@ $mockedJiraIssue = [AtlassianPS.JiraPS.Issue]@{
     Id      = 41701
     Key     = 'TEST-001'
     Fields  = @{ Summary = 'A cool ticket' }
-    RestURL = 'http://jiraserver.example.com/rest/api/latest/issue/41701'
+    RestURL = 'https://powershell.atlassian.net/rest/api/latest/issue/41701'
 }
 $mockedJiraIssueLink = [AtlassianPS.JiraPS.IssueLink]@{
     type         = [AtlassianPS.JiraPS.IssueLinkType]@{name = 'Composition' }
@@ -95,22 +95,30 @@ $mockedJiraComponent = [AtlassianPS.JiraPS.Component]@{
     Id          = "11000"
     Name        = "test component"
     Description = "A test component"
-    RestUrl     = "http://jiraserver.example.com/rest/api/2/component/11000"
+    RestUrl     = "https://powershell.atlassian.net/rest/api/2/component/11000"
 }
 $mockedJiraIssueType = [AtlassianPS.JiraPS.IssueType]@{
     Id   = 40001
     Name = 'Bug'
 }
 $mockedJiraProject = [AtlassianPS.JiraPS.Project]@{
-    Id   = 20001
-    Key  = 'TV'
-    Name = 'T Virus'
+    Id          = 20001
+    Key         = 'TV'
+    Name        = 'T Virus'
+    Description = ""
+    Lead        = $mockedJiraServerUser
+    IssueTypes  = @($mockedJiraIssueType)
+    Roles       = $mockedJiraRole
+    Components  = @($mockedJiraComponent)
+    Category    = $mockedJiraProjectCategory
+    HttpUrl     = 'https://powershell.atlassian.net/browse/TV'
+    RestUrl     = 'https://powershell.atlassian.net/rest/api/2/project/10000'
 }
 $mockedJiraProjectCategory = [AtlassianPS.JiraPS.ProjectCategory]@{
     Id          = 10000
-    Name        = "Home Connect"
-    Description = "Home Connect Projects"
-    RestUrl     = "http://jiraserver.example.com/rest/api/latest/projectCategory/10000"
+    Name        = "All"
+    Description = ""
+    RestUrl     = "https://powershell.atlassian.net/rest/api/2/projectCategory/10000"
 }
 $mockedJiraRole = [AtlassianPS.JiraPS.Role]@{
     Id   = 30001
@@ -121,8 +129,8 @@ $mockedJiraStatus = [AtlassianPS.JiraPS.Status]@{
     Name        = "In Progress"
     Description = "something"
     Category    = $mockedJiraStatusCategory
-    IconUrl     = "http://jiraserver.example.com/rest/api/2/statuscategory/inprogress.gif"
-    RestUrl     = "http://jiraserver.example.com/rest/api/2/statuscategory/4"
+    IconUrl     = "https://powershell.atlassian.net/rest/api/2/statuscategory/inprogress.gif"
+    RestUrl     = "https://powershell.atlassian.net/rest/api/2/statuscategory/4"
 }
 $mockedJiraStatusCategory = [AtlassianPS.JiraPS.StatusCategory]@{
     Id        = 2
@@ -137,7 +145,7 @@ $mockedJiraServerUser = [AtlassianPS.JiraPS.User]@{
     DisplayName  = 'Chopin'
     EmailAddress = 'chipin@musicschool.pl'
     Active       = $true
-    RestUrl      = 'http://jiraserver.example.com/rest/api/2/user?username=fred'
+    RestUrl      = 'https://powershell.atlassian.net/rest/api/2/user?username=fred'
 }
 $mockedJiraCloudUser = [AtlassianPS.JiraPS.User]@{
     AccountId    = 'hannes'
@@ -145,7 +153,7 @@ $mockedJiraCloudUser = [AtlassianPS.JiraPS.User]@{
     DisplayName  = 'Mozart'
     EmailAddress = 'mozart@musicschool.at'
     Active       = $true
-    RestUrl      = 'http://jiraserver.example.com/rest/api/3/user?username=mozart'
+    RestUrl      = 'https://powershell.atlassian.net/rest/api/3/user?username=mozart'
 }
 #endregion Mocked objects
 
@@ -177,7 +185,7 @@ function Add-MockConvertToJiraUser {
     Mock ConvertTo-JiraUser -ModuleName 'JiraPS' { $mockedJiraServerUser }
 }
 function Add-MockGetJiraConfigServer {
-    Mock Get-JiraConfigServer -ModuleName 'JiraPS' { 'http://jiraserver.example.com' }
+    Mock Get-JiraConfigServer -ModuleName 'JiraPS' { 'https://powershell.atlassian.net' }
 }
 function Add-MockGetJiraFilter {
     Mock Get-JiraFilter -ModuleName 'JiraPS' { $mockedJiraFilter }

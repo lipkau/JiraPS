@@ -73,6 +73,12 @@ Describe "Get-JiraIssueType" -Tag 'Unit' {
                 $Uri -like '*/rest/api/*/issuetype/1000'
             }
         }
+
+        It 'Converts results to [AtlassianPS.JiraPS.IssueType]' {
+            Get-JiraIssueType -IssueType 1000
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter { $OutputType -eq "JiraIssueType" }
+        }
     }
 
     Describe 'Input testing' {

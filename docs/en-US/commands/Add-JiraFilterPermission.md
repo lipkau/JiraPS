@@ -15,19 +15,36 @@ Share a Filter with other users.
 
 ## SYNTAX
 
-### ByInputObject (Default)
+### Global (Default)
 
 ```powershell
-Add-JiraFilterPermission [-Filter] <JiraPS.Filter> [-Type] <String>
- [[-Value] <String>] [[-Credential] <PSCredential>] [-WhatIf] [-Confirm]
-  [<CommonParameters>]
+Add-JiraFilterPermission [-Filter] <AtlassianPS.JiraPS.Filter>
+[-Global] <Switch> [[-Credential] <PSCredential>] [-WhatIf] [-Confirm]
+[<CommonParameters>]
 ```
 
-### ById
+### Authenticated
 
 ```powershell
-Add-JiraFilterPermission [-Id] <UInt32> [-Type] <String> [[-Value] <String>]
- [[-Credential] <PSCredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Add-JiraFilterPermission [-Filter] <AtlassianPS.JiraPS.Filter>
+[-Authenticated] <Switch> [[-Credential] <PSCredential>] [-WhatIf] [-Confirm]
+[<CommonParameters>]
+```
+
+### Project
+
+```powershell
+Add-JiraFilterPermission [-Filter] <AtlassianPS.JiraPS.Filter>
+[-Project] <AtlassianPS.JiraPS.Project> [-Role] <AtlassianPS.JiraPS.Role>
+[[-Credential] <PSCredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+```
+
+### Group
+
+```powershell
+Add-JiraFilterPermission [-Filter] <AtlassianPS.JiraPS.Filter>
+[-Group] <AtlassianPS.JiraPS.Group> [[-Credential] <PSCredential>] [-WhatIf]
+[-Confirm] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -40,9 +57,7 @@ Share a Filter with other users, such as "Group", "Project", "ProjectRole",
 ### Example 1
 
 ```powershell
-Add-JiraFilterPermission -Filter (Get-JiraFilter 12345) -Type "Global"
-#-------
-Add-JiraFilterPermission -Id 12345 -Type "Global"
+Add-JiraFilterPermission -Filter 12345 -Global
 ```
 
 Two methods of sharing Filter 12345 with everyone.
@@ -50,7 +65,7 @@ Two methods of sharing Filter 12345 with everyone.
 ### Example 2
 
 ```powershell
-12345 | Add-JiraFilterPermission -Type "Authenticated"
+12345 | Add-JiraFilterPermission -Authenticated
 ```
 
 Share Filter 12345 with authenticated users.
@@ -60,56 +75,53 @@ _The Id could be read from a file._
 ### Example 3
 
 ```powershell
-Get-JiraFilter 12345 | Add-JiraFilterPermission -Type "Group" -Value "administrators"
+Get-JiraFilter 12345 | Add-JiraFilterPermission -Group "administrators"
 ```
 
 Share Filter 12345 only with users in the administrators groups.
+
+### Example 4
+
+```powershell
+Add-JiraFilterPermission -Filter 12345 -Project "TV"
+```
+
+Restrict this filter to all users who have access to the `TV` project.
+
+### Example 5
+
+```powershell
+Add-JiraFilterPermission -Filter 12345 -Project "TV" -Role "Responsibles"
+```
+
+Restrict this filter to responiblesof the `TV` project.
 
 ## PARAMETERS
 
 ### -Filter
 
-Filter object to which the permission should be applied
+Filter object to which the permission Should be applied
 
 ```yaml
-Type: JiraPS.Filter
-Parameter Sets: ByInputObject
-Aliases:
-
-Required: True
-Position: 0
-Default value: None
-Accept pipeline input: True (ByValue)
-Accept wildcard characters: False
-```
-
-### -Id
-
-Id of the Filter to which the permission should be applied
-
-_Id can be passed over the pipeline when reading from a file._
-
-```yaml
-Type: UInt32[]
-Parameter Sets: ById
-Aliases:
-
-Required: True
-Position: 0
-Default value: None
-Accept pipeline input: True (ByValue)
-Accept wildcard characters: False
-```
-
-### -Type
-
-Type of the permission to add
-
-```yaml
-Type: String
+Type: AtlassianPS.JiraPS.Filter
 Parameter Sets: (All)
 Aliases:
-Accepted values: Group, Project, ProjectRole, Authenticated, Global
+
+Required: True
+Position: 0
+Default value: None
+Accept pipeline input: True (ByValue)
+Accept wildcard characters: False
+```
+
+### -Global
+
+Give global access to the filter
+
+```yaml
+Type: Switch
+Parameter Sets: Global
+Aliases:
 
 Required: True
 Position: 1
@@ -118,28 +130,65 @@ Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -Value
+### -Authenticated
 
-Value for the Type of the permission.
-
-The Value differs per Type of the permission.
-
-Here is a table to know what Value to provide:
-|Type         |Value                |Source                                              |
-|-------------|---------------------|----------------------------------------------------|
-|Group        |Name of the Group    |Can be retrieved with `(Get-JiraGroup ...).Name`    |
-|Project      |Id of the Project    |Can be retrieved with `(Get-JiraProject ...).Id`    |
-|ProjectRole  |Id of the ProjectRole|Can be retrieved with `(Get-JiraProjectRole ...).Id`|
-|Authenticated| **must be null**    |                                                    |
-|Global       | **must be null**    |                                                    |
+Give access to only users who are logged in.
 
 ```yaml
-Type: String
-Parameter Sets: (All)
+Type: Switch
+Parameter Sets: Authenticated
+Aliases:
+
+Required: False
+Position: 1
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Project
+
+Give access to all users of a project
+
+```yaml
+Type: AtlassianPS.JiraPS.Project
+Parameter Sets: Project
+Aliases:
+
+Required: True
+Position: 1
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Role
+
+Give access users which have a specific role in a project.
+
+```yaml
+Type: AtlassianPS.JiraPS.Role
+Parameter Sets: Project
 Aliases:
 
 Required: False
 Position: 2
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -Group
+
+Give access to only users who are logged in.
+
+```yaml
+Type: AtlassianPS.JiraPS.Group
+Parameter Sets: Group
+Aliases:
+
+Required: True
+Position: 1
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -205,11 +254,11 @@ For more information, see about_CommonParameters
 
 ## INPUTS
 
-### [JiraPS.Filter]
+### [AtlassianPS.JiraPS.Filter]
 
 ## OUTPUTS
 
-### [JiraPS.Filter]
+### [AtlassianPS.JiraPS.Filter]
 
 ## NOTES
 
@@ -224,8 +273,12 @@ If neither are supplied, this function will run with anonymous access to JIRA.
 
 ## RELATED LINKS
 
+[Find-JiraFilter](../Find-JiraFilter/)
+
 [Get-JiraFilter](../Get-JiraFilter/)
 
 [Get-JiraFilterPermission](../Get-JiraFilterPermission/)
+
+[Remove-JiraFilter](../Remove-JiraFilter/)
 
 [Remove-JiraFilterPermission](../Remove-JiraFilterPermission/)

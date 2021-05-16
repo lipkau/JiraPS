@@ -68,7 +68,7 @@ Note the use of `Format-Jira` to convert the output of `Get-Process` into a form
 
 ### -Comment
 
-Worklog item that should be added to JIRA
+Worklog item that Should be added to JIRA
 
 ```yaml
 Type: String
@@ -135,7 +135,7 @@ Accept wildcard characters: False
 ### -VisibleRole
 
 Visibility of the comment.  
-Defines if the comment should be publicly visible, viewable to only developers, or only administrators.
+Defines if the comment Should be publicly visible, viewable to only developers, or only administrators.
 
 Allowed values are:
 

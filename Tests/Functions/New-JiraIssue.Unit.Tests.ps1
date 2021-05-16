@@ -1,146 +1,177 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "New-JiraIssue" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'https://jira.example.com'
+    $issueTypeTest = 1
 
-        . "$PSScriptRoot/../Shared.ps1"
+    Mock Get-JiraConfigServer {
+        $jiraServer
+    }
 
+    # If we don't override this in a context or test, we don't want it to
+    # actually try to query a JIRA instance
+    Mock Invoke-JiraMethod {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        @{ Key = "TEST-01" }
+    }
 
-        $jiraServer = 'https://jira.example.com'
-        $issueTypeTest = 1
+    Mock Get-JiraIssue {
+        [PSCustomObject] @{ Key = "TEST-01" }
+    }
 
-        Mock Get-JiraConfigServer {
-            $jiraServer
+    Mock Get-JiraProject {
+        $issueObject = [PSCustomObject] @{
+            ID   = $issueTypeTest
+            Name = 'Test Issue Type'
         }
-
-        # If we don't override this in a context or test, we don't want it to
-        # actually try to query a JIRA instance
-        Mock Invoke-JiraMethod {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            @{ Key = "TEST-01" }
+        $issueObject.PSObject.TypeNames.Insert(0, 'JiraPS.IssueType')
+        $object = [PSCustomObject] @{
+            'ID'  = $Project
+            'Key' = "TEST"
         }
+        Add-Member -InputObject $object -MemberType NoteProperty -Name "IssueTypes" -Value $issueObject
+        $object.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
+        return $object
+    }
 
-        Mock Get-JiraIssue {
-            [PSCustomObject] @{ Key = "TEST-01" }
+    Mock Get-JiraUser {
+        $object = [PSCustomObject] @{
+            'Name' = $UserName;
         }
+        $object.PSObject.TypeNames.Insert(0, 'JiraPS.User')
+        return $object
+    }
 
-        Mock Get-JiraProject {
-            $issueObject = [PSCustomObject] @{
-                ID   = $issueTypeTest
-                Name = 'Test Issue Type'
-            }
-            $issueObject.PSObject.TypeNames.Insert(0, 'JiraPS.IssueType')
+    # This one needs to be able to output multiple objects
+    Mock Get-JiraField {
+        $Field | % {
             $object = [PSCustomObject] @{
-                'ID'  = $Project
-                'Key' = "TEST"
+                'Id' = $_
             }
-            Add-Member -InputObject $object -MemberType NoteProperty -Name "IssueTypes" -Value $issueObject
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Project')
-            return $object
+            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Field')
+            $object
+        }
+    }
+
+    Mock Get-JiraIssueCreateMetadata {
+        @(
+            @{Name = 'Project'; ID = 'Project'; Required = $true }
+            @{Name = 'IssueType'; ID = 'IssueType'; Required = $true }
+            @{Name = 'Priority'; ID = 'Priority'; Required = $true }
+            @{Name = 'Summary'; ID = 'Summary'; Required = $true }
+            @{Name = 'Description'; ID = 'Description'; Required = $true }
+            @{Name = 'Reporter'; ID = 'Reporter'; Required = $true }
+        )
+    }
+
+    $newParams = @{
+        'Project'     = 'TEST';
+        'IssueType'   = 1;
+        'Priority'    = 1;
+        'Reporter'    = 'testUsername';
+        'Summary'     = 'Test summary';
+        'Description' = 'Test description';
+    }
+
+    $pipelineParams = New-Object -TypeName PSCustomObject -Property $newParams
+
+    Describe "Sanity checking" {
+        $command = Get-Command -Name New-JiraIssue
+
+        It "has a parameter 'Project' of type [String]" {
+            $command | Should -HaveParameter "Project" -Type [String]
         }
 
-        Mock Get-JiraUser {
-            $object = [PSCustomObject] @{
-                'Name' = $UserName;
+        It "has a parameter 'IssueType' of type [String]" {
+            $command | Should -HaveParameter "IssueType" -Type [String]
+        }
+
+        It "has a parameter 'Priority' of type [Int]" {
+            $command | Should -HaveParameter "Priority" -Type [Int]
+        }
+
+        It "has a parameter 'Summary' of type [String]" {
+            $command | Should -HaveParameter "Summary" -Type [String]
+        }
+
+        It "has a parameter 'Description' of type [String]" {
+            $command | Should -HaveParameter "Description" -Type [String]
+        }
+
+        It "has a parameter 'Reporter' of type [AtlassianPS.JiraPS.User]" {
+            $command | Should -HaveParameter "Reporter" -Type [AtlassianPS.JiraPS.User]
+        }
+
+        It "has a parameter 'Labels' of type [String[]]" {
+            $command | Should -HaveParameter "Labels" -Type [String[]]
+        }
+
+        It "has a parameter 'Parent' of type [String]" {
+            $command | Should -HaveParameter "Parent" -Type [String]
+        }
+
+        It "has a parameter 'FixVersion' of type [String[]]" {
+            $command | Should -HaveParameter "FixVersion" -Type [String[]]
+        }
+
+        It "has an alias 'FixVersions' for parameter 'FixVersion" {
+            $command | Should -HaveParameter "FixVersion" -Alias "FixVersions"
+        }
+
+        It "has a parameter 'Fields' of type [PSCustomObject]" {
+            $command | Should -HaveParameter "Fields" -Type [PSCustomObject]
+        }
+
+        It "has a parameter 'Credential' of type [PSCredential]" {
+            $command | Should -HaveParameter "Credential" -Type [PSCredential]
+        }
+    }
+
+    Describe "Behavior testing" {
+        It "Creates an issue in JIRA" {
+            { New-JiraIssue @newParams } | Should -Not -Throw
+            # The String in the ParameterFilter is made from the keywords
+            # we should expect to see in the JSON that Should -Be sent,
+            # including the summary provided in the test call above.
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/issue" }
+        }
+        It "Creates an issue in JIRA from pipeline" {
+            { $pipelineParams | New-JiraIssue } | Should -Not -Throw
+            # The String in the ParameterFilter is made from the keywords
+            # we should expect to see in the JSON that Should -Be sent,
+            # including the summary provided in the test call above.
+            Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/issue" }
+        }
+    }
+
+    Describe "Input testing" {
+        It "Checks to make sure all required fields are provided" {
+            # We'll create a custom field that's required, then see what happens when we don't provide it
+            Mock Get-JiraIssueCreateMetadata {
+                @(
+                    @{Name = 'Project'; ID = 'Project'; Required = $true }
+                    @{Name = 'IssueType'; ID = 'IssueType'; Required = $true }
+                    @{Name = 'Priority'; ID = 'Priority'; Required = $true }
+                    @{Name = 'Summary'; ID = 'Summary'; Required = $true }
+                    @{Name = 'Description'; ID = 'Description'; Required = $true }
+                    @{Name = 'Reporter'; ID = 'Reporter'; Required = $true }
+                    @{Name = 'CustomField'; ID = 'CustomField'; Required = $true }
+                )
             }
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.User')
-            return $object
-        }
 
-        # This one needs to be able to output multiple objects
-        Mock Get-JiraField {
-            $Field | % {
-                $object = [PSCustomObject] @{
-                    'Id' = $_
-                }
-                $object.PSObject.TypeNames.Insert(0, 'JiraPS.Field')
-                $object
-            }
-        }
-
-        Mock Get-JiraIssueCreateMetadata {
-            @(
-                @{Name = 'Project'; ID = 'Project'; Required = $true }
-                @{Name = 'IssueType'; ID = 'IssueType'; Required = $true }
-                @{Name = 'Priority'; ID = 'Priority'; Required = $true }
-                @{Name = 'Summary'; ID = 'Summary'; Required = $true }
-                @{Name = 'Description'; ID = 'Description'; Required = $true }
-                @{Name = 'Reporter'; ID = 'Reporter'; Required = $true }
-            )
-        }
-
-        $newParams = @{
-            'Project'     = 'TEST';
-            'IssueType'   = 1;
-            'Priority'    = 1;
-            'Reporter'    = 'testUsername';
-            'Summary'     = 'Test summary';
-            'Description' = 'Test description';
-        }
-
-        $pipelineParams = New-Object -TypeName PSCustomObject -Property $newParams
-
-        Describe "Sanity checking" {
-            $command = Get-Command -Name New-JiraIssue
-
-            defParam $command 'Project'
-            defParam $command 'IssueType'
-            defParam $command 'Priority'
-            defParam $command 'Summary'
-            defParam $command 'Description'
-            defParam $command 'Reporter'
-            defParam $command 'Labels'
-            defParam $command 'Fields'
-            defParam $command 'Credential'
-        }
-
-        Describe "Behavior testing" {
-            It "Creates an issue in JIRA" {
-                { New-JiraIssue @newParams } | Should Not Throw
-                # The String in the ParameterFilter is made from the keywords
-                # we should expect to see in the JSON that should be sent,
-                # including the summary provided in the test call above.
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/issue" }
-            }
-            It "Creates an issue in JIRA from pipeline" {
-                { $pipelineParams | New-JiraIssue } | Should Not Throw
-                # The String in the ParameterFilter is made from the keywords
-                # we should expect to see in the JSON that should be sent,
-                # including the summary provided in the test call above.
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Times 1 -Scope It -ParameterFilter { $Method -eq 'Post' -and $URI -like "$jiraServer/rest/api/*/issue" }
-            }
-        }
-
-        Describe "Input testing" {
-            It "Checks to make sure all required fields are provided" {
-                # We'll create a custom field that's required, then see what happens when we don't provide it
-                Mock Get-JiraIssueCreateMetadata {
-                    @(
-                        @{Name = 'Project'; ID = 'Project'; Required = $true }
-                        @{Name = 'IssueType'; ID = 'IssueType'; Required = $true }
-                        @{Name = 'Priority'; ID = 'Priority'; Required = $true }
-                        @{Name = 'Summary'; ID = 'Summary'; Required = $true }
-                        @{Name = 'Description'; ID = 'Description'; Required = $true }
-                        @{Name = 'Reporter'; ID = 'Reporter'; Required = $true }
-                        @{Name = 'CustomField'; ID = 'CustomField'; Required = $true }
-                    )
-                }
-
-                { New-JiraIssue @newParams } | Should Throw
-                { New-JiraIssue @newParams -Fields @{'CustomField' = '.' } } | Should Not Throw
-            }
+            { New-JiraIssue @newParams } | Should -Throw
+            { New-JiraIssue @newParams -Fields @{'CustomField' = '.' } } | Should -Not -Throw
         }
     }
 }

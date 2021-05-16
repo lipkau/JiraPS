@@ -1,6 +1,6 @@
 function New-JiraSession {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
     [System.Diagnostics.CodeAnalysis.SuppressMessage('PSUseShouldProcessForStateChangingFunctions', '')]
     param(
         [Parameter( Mandatory )]
@@ -9,7 +9,10 @@ function New-JiraSession {
         $Credential,
 
         [Hashtable]
-        $Headers = @{ }
+        $Headers = @{ },
+
+        [Switch]
+        $Passthru
     )
 
     begin {
@@ -45,7 +48,9 @@ function New-JiraSession {
             }
         }
 
-        Write-Output $result
+        if ($Passthru) {
+            $result
+        }
     }
 
     end {

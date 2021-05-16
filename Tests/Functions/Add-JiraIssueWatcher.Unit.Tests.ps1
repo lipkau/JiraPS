@@ -1,87 +1,118 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe "Add-JiraIssueWatcher" -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
+        #region Mock
+        Add-CommonMocks
 
-        Import-Module $env:BHManifestToTest -Force
+        Add-MockGetJiraConfigServer
+
+        Add-MockGetJiraIssue
+
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Post' -and
+            $Uri -like "*/issue/*/watchers"
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+        }
+        #endregion Mock
     }
-    AfterAll {
-        Invoke-TestCleanup
+
+    Describe 'Behavior checking' {
+        BeforeAll {
+            $issue = $mockedJiraIssue
+            $user = $mockedJiraServerUser
+        }
+
+        It "Adds a Watcher to an Issue" {
+            Add-JiraIssueWatcher -Watcher $user -Issue $issue -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
+            }
+            Assert-MockCalled @assertMockCalledSplat
+        }
     }
 
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-        $issueID = 41701
-        $issueKey = 'IT-3676'
-
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+    Describe 'Input testing' {
+        BeforeAll {
+            $issue = $mockedJiraIssue
+            $user = $mockedJiraServerUser
         }
 
-        Mock Get-JiraIssue -ModuleName JiraPS {
-            $object = [PSCustomObject] @{
-                ID      = $issueID
-                Key     = $issueKey
-                RestUrl = "$jiraServer/rest/api/latest/issue/$issueID"
+        It 'fetches the Issue if an incomplete object was provided' {
+            Add-JiraIssueWatcher -Issue 'TEST-001' -Watcher $user -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
+        }
+
+        It 'uses the provided Issue when a complete object was provided' {
+            Add-JiraIssueWatcher -Issue $issue -Watcher $user -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 0 -Scope It
+        }
+
+        It 'accepts multiple Users' {
+            Add-JiraIssueWatcher -Watcher $user, $user, $user -Issue $issue -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 3
+                Scope       = 'It'
             }
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
-            return $object
+            Assert-MockCalled @assertMockCalledSplat
         }
 
-        Mock Resolve-JiraIssueObject -ModuleName JiraPS {
-            Get-JiraIssue -Key $Issue
+        It 'accepts Users over the pipeline' {
+            $user | Add-JiraIssueWatcher -Issue $issue -ErrorAction Stop
+        }
+    }
+
+    Describe 'Forming of the request' {
+        BeforeAll {
+            $issue = $mockedJiraIssue
+            $serverUser = $mockedJiraServerUser
+            $cloudUser = $mockedJiraCloudUser
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issue/$issueID/watchers" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-        }
+        It 'constructs a valid request for adding a watcher on jira server' {
+            Add-JiraIssueWatcher -Issue $issue -Watcher $serverUser -ErrorAction Stop
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
-
-        #############
-        # Tests
-        #############
-
-        Describe "Sanity checking" {
-            $command = Get-Command -Name Add-JiraIssueWatcher
-
-            defParam $command 'Watcher'
-            defParam $command 'Issue'
-            defParam $command 'Credential'
-        }
-
-        Describe "Behavior testing" {
-
-            It "Adds a Watcher to an issue in JIRA" {
-                $WatcherResult = Add-JiraIssueWatcher -Watcher 'fred' -Issue $issueKey
-                $WatcherResult | Should BeNullOrEmpty
-
-                # Get-JiraIssue should be used to identify the issue parameter
-                Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
-
-                # Invoke-JiraMethod should be used to add the Watcher
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
+                ParameterFilter = {
+                    $Method -eq 'Post' -and
+                    $Uri -eq 'http://jiraserver.example.com/rest/api/latest/issue/41701/watchers' -and
+                    $Body -eq '"fred"'
+                }
             }
+            Assert-MockCalled @assertMockCalledSplat
+        }
+        It 'constructs a valid request for adding a watcher on jira cloud' {
+            Add-JiraIssueWatcher -Issue $issue -Watcher $cloudUser -ErrorAction Stop
 
-            It "Accepts pipeline input from Get-JiraIssue" {
-                $WatcherResult = Get-JiraIssue -Key $issueKey | Add-JiraIssueWatcher -Watcher 'fred'
-                $WatcherResult | Should BeNullOrEmpty
-
-                # Get-JiraIssue should be called once here, and once inside Add-JiraIssueWatcher (to identify the InputObject parameter)
-                Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 2 -Scope It
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
+                ParameterFilter = {
+                    $Method -eq 'Post' -and
+                    $Uri -eq 'http://jiraserver.example.com/rest/api/latest/issue/41701/watchers' -and
+                    $Body -eq '"hannes"'
+                }
             }
+            Assert-MockCalled @assertMockCalledSplat
         }
     }
 }

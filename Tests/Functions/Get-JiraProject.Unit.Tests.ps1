@@ -50,6 +50,16 @@ Describe "Get-JiraProject" -Tag 'Unit' {
                 $Uri -like "*/rest/api/*/project/10001"
             }
         }
+
+        It 'Converts results to [AtlassianPS.JiraPS.Project]' {
+            Get-JiraProject
+            Get-JiraProject -Project 'TST'
+            Get-JiraProject -Project '10001'
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter {
+                $OutputType -like 'JiraProject'
+            } -Times 3
+        }
     }
 
     Describe 'Input testing' {

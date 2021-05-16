@@ -1,6 +1,7 @@
-﻿function Get-JiraIssueWatcher {
+function Get-JiraIssueWatcher {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType([AtlassianPS.JiraPS.User])]
     param(
         [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
         [ValidateNotNullOrEmpty()]
@@ -52,10 +53,7 @@
                 Credential = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($result = Invoke-JiraMethod @parameter) {
-                Write-Output $result.watchers
-                # TODO: are these users?
-            }
+            ConvertTo-JiraUser (Invoke-JiraMethod @parameter).watchers
         }
     }
 

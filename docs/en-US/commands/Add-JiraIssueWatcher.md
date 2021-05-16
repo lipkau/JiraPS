@@ -56,7 +56,7 @@ It would be best to validate the query first to make sure the query returns the 
 
 ### -Watcher
 
-Watcher that should be added to JIRA
+Watcher that Should be added to JIRA
 
 ```yaml
 Type: String[]
@@ -72,7 +72,7 @@ Accept wildcard characters: False
 
 ### -Issue
 
-Issue that should be watched.
+Issue that Should be watched.
 
 Can be a `JiraPS.Issue` object, issue key, or internal issue ID.
 

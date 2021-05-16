@@ -1,5 +1,5 @@
 function ConvertTo-JiraEditMetaField {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param(
         [Parameter( ValueFromPipeline )]
         [PSObject[]]
@@ -8,7 +8,7 @@ function ConvertTo-JiraEditMetaField {
 
     process {
         foreach ($i in $InputObject) {
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$InputObject to custom object"
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Converting `$i to custom object"
 
             $fields = $i.fields
             $fieldNames = (Get-Member -InputObject $fields -MemberType '*Property').Name

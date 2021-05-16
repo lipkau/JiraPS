@@ -1,5 +1,6 @@
+# TODO:
 function Resolve-FullPath {
-    [CmdletBinding()]
+    [CmdletBinding( )]
     param (
         # Path to be resolved.
         # Can be realtive or absolute.

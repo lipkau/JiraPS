@@ -1,12 +1,13 @@
 function Get-JiraGroup {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding()]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.Group] )]
     param(
-        [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
+        [Parameter( Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
-        [Alias('Name')]
+        [Alias('GroupName')]
         [String[]]
-        $GroupName,
+        $Name,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -26,21 +27,23 @@ function Get-JiraGroup {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        foreach ($group in $GroupName) {
-            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$group]"
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$group [$group]"
+        foreach ($_name in $Name) {
+            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_name]"
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_name [$_name]"
 
-            $escapedGroupName = ConvertTo-URLEncoded $group
+            $escapedGroupName = ConvertTo-URLEncoded $_name
 
             $parameter = @{
-                URI        = $resourceURi -f $escapedGroupName
-                Method     = "GET"
-                Credential = $Credential
+                URI          = $resourceURi -f $escapedGroupName
+                Method       = "GET"
+                GetParameter = @{
+                    expand = "users"
+                }
+                OutputType   = "JiraGroup"
+                Credential   = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            $result = Invoke-JiraMethod @parameter
-
-            Write-Output (ConvertTo-JiraGroup -InputObject $result)
+            Invoke-JiraMethod @parameter
         }
     }
 

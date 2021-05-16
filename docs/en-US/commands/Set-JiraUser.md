@@ -18,15 +18,17 @@ Modifies user properties in JIRA
 ### ByNamedParameters (Default)
 
 ```powershell
-Set-JiraUser [-User] <Object[]> [-DisplayName <String>] [-EmailAddress <String>] [[-Active] <Boolean>]
- [-Credential <PSCredential>] [-PassThru] [-WhatIf] [-Confirm] [<CommonParameters>]
+Set-JiraUser [-User] <AtlassianPS.JiraPS.User> [-DisplayName <String>]
+[-EmailAddress <String>] [[-Active] <Boolean>] [-Credential <PSCredential>]
+[-PassThru] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ### ByHashtable
 
 ```powershell
-Set-JiraUser [-User] <Object[]> [-Property] <Hashtable> [-Credential <PSCredential>] [-PassThru] [-WhatIf]
- [-Confirm] [<CommonParameters>]
+Set-JiraUser [-User] <AtlassianPS.JiraPS.User> [-Property] <Hashtable>
+[-Credential <PSCredential>] [-PassThru] [-WhatIf] [-Confirm]
+[<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -48,7 +50,10 @@ The original value is overridden.
 ### EXAMPLE 2
 
 ```powershell
-Set-JiraUser -User user2 -Properties @{EmailAddress='user2_new@example.com';DisplayName='User 2'}
+Get-JiraUser user2 | Set-JiraUser -Properties @{
+    EmailAddress='user2_new@example.com'
+    DisplayName='User 2'
+}
 ```
 
 This example modifies a user's properties using a hashtable.
@@ -61,14 +66,14 @@ This allows updating properties that are not exposed as parameters to this funct
 Username or user object obtained from `Get-JiraUser`.
 
 ```yaml
-Type: Object[]
+Type: AtlassianPS.JiraPS.User
 Parameter Sets: (All)
 Aliases: UserName
 
 Required: True
 Position: 1
 Default value: None
-Accept pipeline input: True (ByPropertyName, ByValue)
+Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
 ```
 
@@ -155,7 +160,7 @@ Accept wildcard characters: False
 
 ### -PassThru
 
-Whether output should be provided after invoking this function.
+Whether output Should be provided after invoking this function.
 
 ```yaml
 Type: SwitchParameter
@@ -204,25 +209,33 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction,
+-ErrorVariable, -InformationAction, -InformationVariable, -OutVariable,
+-OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### [JiraPS.User]
+### [AtlassianPS.JiraPS.User]
+
+### [String]
+
+### [Hashtable]
 
 ## OUTPUTS
 
-### [JiraPS.User]
+### [AtlassianPS.JiraPS.User]
 
 If the `-PassThru` parameter is provided, this function will provide a reference
-to the JIRA user modified.  Otherwise, this function does not provide output.
+to the JIRA user modified.  
+Otherwise, this function does not provide output.
 
 ## NOTES
 
 The `-Active` parameter is supported only in Jira Server version 8.3.0 and above.
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 
@@ -231,3 +244,7 @@ If neither are supplied, this function will run with anonymous access to JIRA.
 [New-JiraUser](../New-JiraUser/)
 
 [Get-JiraUser](../Get-JiraUser/)
+
+[Find-JiraUser](../Find-JiraUser/)
+
+[Remove-JiraUser](../Remove-JiraUser/)

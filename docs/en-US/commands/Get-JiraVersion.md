@@ -168,7 +168,7 @@ Accept wildcard characters: False
 
 ### Sort
 
-Define the order in which the versions should be sorted before returning.
+Define the order in which the versions Should be sorted before returning.
 
 Possible values are:
 

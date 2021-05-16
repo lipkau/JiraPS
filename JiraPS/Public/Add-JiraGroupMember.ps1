@@ -1,21 +1,19 @@
 function Add-JiraGroupMember {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
+    [OutputType( [AtlassianPS.JiraPS.Group] )]
     param(
-        [Parameter( Mandatory, ValueFromPipeline )]
-        [Alias('GroupName')]
-        [ValidateNotNullOrEmpty()]
-        [Object[]]
-        $Group,
-
         [Parameter( Mandatory )]
         [ValidateNotNullOrEmpty()]
-        [Object[]]
-        $UserName,
-        <#
-          #ToDo:CustomClass
-          Once we have custom classes, this can also accept ValueFromPipeline
-        #>
+        [Alias('GroupName')]
+        [AtlassianPS.JiraPS.Group]
+        $Group,
+
+        [Parameter( Mandatory, ValueFromPipeline )]
+        [ValidateNotNullOrEmpty()]
+        [Alias('UserName')]
+        [AtlassianPS.JiraPS.User[]]
+        $User,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -31,57 +29,40 @@ function Add-JiraGroupMember {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi = "$server/rest/api/latest/group/user?groupname={0}"
+        $resourceURi = "$server/rest/api/latest/group/user"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        foreach ($_group in $Group) {
-            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_group]"
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_group [$_group]"
-
-            $groupObj = Get-JiraGroup -GroupName $_group -Credential $Credential -ErrorAction Stop
-            $groupMembers = (Get-JiraGroupMember -Group $_group -Credential $Credential -ErrorAction Stop).Name
-
-            # At present, it looks like this REST method doesn't support arrays in the Name property...
-            # in other words, a single REST call can only add a single group member to a single group.
-
-            # That's kind of annoying.
-
-            # Anyway, this builds a bunch of individual JSON strings with each username in its own Web
-            # request, which we'll loop through again in the Process block.
-            $users = Resolve-JiraUser -InputObject $UserName -Exact -Credential $Credential
-
-            foreach ($user in $users) {
-
-                if ($groupMembers -notcontains $user.Name) {
-                    Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] User [$($user.Name)] is not already in group [$_group]. Adding user."
-
-                    $parameter = @{
-                        URI        = $resourceURi -f $groupObj.Name
-                        Method     = "POST"
-                        Body       = ConvertTo-Json -InputObject @{ 'name' = $user.Name }
-                        Credential = $Credential
-                    }
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                    if ($PSCmdlet.ShouldProcess($GroupName, "Adding user '$($user.Name)'.")) {
-                        $result = Invoke-JiraMethod @parameter
-                    }
-                }
-                else {
-                    $errorMessage = @{
-                        Category         = "ResourceExists"
-                        CategoryActivity = "Adding [$user] to [$_group]"
-                        Message          = "User [$user] is already a member of group [$_group]"
-                    }
-                    Write-Error @errorMessage
-                }
+        if (-not $Group.Id) {
+            $writeErrorSplat = @{
+                Exception    = "Missing property for identification"
+                ErrorId      = "InvalidData.Group.MissingIdentificationProperty"
+                Category     = "InvalidData"
+                Message      = "Group needs to be identifiable by Name. Name was missing."
+                TargetObject = $Group
             }
+            WriteError @writeErrorSplat
+            return
+        }
 
-            if ($PassThru) {
-                Write-Output (ConvertTo-JiraGroup -InputObject $result)
+        foreach ($_user in $User) {
+            $parameter = @{
+                URI          = $resourceURi
+                Method       = "POST"
+                GetParameter = @{ groupname = $Group.Name }
+                Body         = ConvertTo-Json -InputObject @{ $_user.identify().Key = $_user.identify().Value }
+                OutputType   = "JiraGroup"
+                Credential   = $Credential
+                Cmdlet       = $PSCmdlet
+            }
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
+            if ($PSCmdlet.ShouldProcess($Group.ToString(), "Adding user '$_user'.")) {
+                $result = Invoke-JiraMethod @parameter
+
+                if ($PassThru) { $result }
             }
         }
     }

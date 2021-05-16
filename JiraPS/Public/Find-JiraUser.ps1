@@ -1,7 +1,7 @@
 function Find-JiraUser {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( SupportsPaging )]
-    [OutputType([AtlassianPS.JiraPS.User])]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.User] )]
     param(
         [Parameter( Mandatory, ParameterSetName = "ByEmailAddress" )]
         [AllowEmptyString()]
@@ -13,11 +13,19 @@ function Find-JiraUser {
         [String]
         $UserName,
 
+        [Parameter()]
         [Switch]
         $IncludeInactive,
 
-        [ValidateRange(1, [int]::MaxValue)]
-        [UInt32]$PageSize = 50,
+        [Parameter()]
+        [ValidateRange(0, [UInt64]::MaxValue)]
+        [UInt64]
+        $Skip,
+
+        [Parameter()]
+        [ValidateRange(1, 1000)]
+        [UInt32]
+        $PageSize = $script:DefaultPageSize,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -30,47 +38,47 @@ function Find-JiraUser {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi = "$server/rest/api/latest/user/search?{0}={1}&expand=groups"
-
-        if ($IncludeInactive) {
-            $resourceURi += "&includeInactive=true"
-        }
-        if ($PageSize) {
-            $resourceURi += "&maxResults=$PageSize"
-        }
-        if ($Skip) {
-            $resourceURi += "&startAt=$Skip"
-        }
+        $resourceURi = "$server/rest/api/latest/user/search"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
+        $getParameter = @{
+            expand          = "groups"
+            maxResults      = $PageSize
+            includeInactive = $IncludeInactive
+        }
+
+        if ($Skip) {
+            $getParameter["startAt"] = $Skip
+        }
+
         switch ($PsCmdLet.ParameterSetName) {
             "ByEmailAddress" {
-                $fieldMapping = @{ key = "query"; value = $EmailAddress }
+                $getParameter["query"] = $EmailAddress
             }
             "ByUserName" {
-                $fieldMapping = @{ key = "username"; value = $UserName }
+                $getParameter["username"] = $UserName
             }
         }
 
-        if (-not $fieldMapping) {
-            $writeErrorSplat = @{
-                Exception = "Missing parameters for search"
-                ErrorId   = "InvalidArgument.User.MissingSearchProperty"
-                Category  = "InvalidArgument"
-                Message   = "Unable to determine by which field to search for"
-            }
-            ThrowError @writeErrorSplat
+        <# $writeErrorSplat = @{
+            Exception = "Missing parameters for search"
+            ErrorId   = "InvalidArgument.User.MissingSearchProperty"
+            Category  = "InvalidArgument"
+            Message   = "Unable to determine by which field to search for"
         }
+        ThrowError @writeErrorSplat #>
 
         $parameter = @{
-            URI        = $resourceURi -f $fieldMapping["key"], $fieldMapping["value"]
-            Method     = "GET"
-            OutputType = "JiraUser"
-            Credential = $Credential
+            URI          = $resourceURi
+            Method       = "GET"
+            GetParameter = $getParameter
+            OutputType   = "JiraUser"
+            Credential   = $Credential
+            Cmdlet       = $Cmdlet
         }
         Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
         Invoke-JiraMethod @parameter

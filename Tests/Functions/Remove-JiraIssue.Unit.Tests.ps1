@@ -1,28 +1,23 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Remove-JiraIssue" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'http://jiraserver.example.com'
 
-        . "$PSScriptRoot/../Shared.ps1"
+    $TestIssueJSONs = @{
 
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $TestIssueJSONs = @{
-
-            # basic issue
-            'TEST-1' = @'
+        # basic issue
+        'TEST-1' = @'
             {
                 "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
                 "id": "58159",
@@ -56,8 +51,8 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
                 }
               }
 '@
-            # issue w/ subtasks
-            'TEST-2' = @'
+        # issue w/ subtasks
+        'TEST-2' = @'
             {
                 "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
                 "id": "58160",
@@ -126,8 +121,8 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
                 }
               }
 '@
-            # the sub-task itself
-            'TEST-3' = @'
+        # the sub-task itself
+        'TEST-3' = @'
             {
                 "expand": "renderedFields,names,schema,operations,editmeta,changelog,versionedRepresentations",
                 "id": "58161",
@@ -196,29 +191,29 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
               }
 '@
 
-        }
+    }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+    Mock Get-JiraConfigServer -ModuleName JiraPS {
+        Write-Output $jiraServer
+    }
 
-        Mock Get-JiraIssue {
-            $obj = $TestIssueJSONs[$Key] | ConvertFrom-Json
+    Mock Get-JiraIssue {
+        $obj = $TestIssueJSONs[$Key] | ConvertFrom-Json
 
-            $obj.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
+        $obj.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
 
-            $obj | Add-Member -MemberType ScriptMethod -Name ToString -Value { return "" } -Force
-            return $obj
-        }
+        $obj | Add-Member -MemberType ScriptMethod -Name ToString -Value { return "" } -Force
+        return $obj
+    }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $URI -like "$jiraServer/rest/api/*/issue/TEST-1?*" -and $Method -eq "Delete" } {
-            return $null
-        }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $URI -like "$jiraServer/rest/api/*/issue/TEST-1?*" -and $Method -eq "Delete" } {
+        return $null
+    }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $URI -like "$jiraServer/rest/api/*/issue/TEST-2?deleteSubTasks=False" -and $Method -eq "Delete" } {
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $URI -like "$jiraServer/rest/api/*/issue/TEST-2?deleteSubTasks=False" -and $Method -eq "Delete" } {
 
-            Write-Error -Exception  -ErrorId
-            $MockedResponse = @"
+        Write-Error -Exception  -ErrorId
+        $MockedResponse = @"
             {
                 "errorMessages": [
                   "The issue 'TEST-2' has subtasks.  You must specify the 'deleteSubtasks' parameter to delete this issue and all its subtasks."
@@ -228,75 +223,106 @@ Describe "Remove-JiraIssue" -Tag 'Unit' {
 "@ | ConvertFrom-Json
 
 
-            $Exception = ([System.ArgumentException]"Server responded with Error")
-            $errorId = "ServerResponse"
-            $errorCategory = 'NotSpecified'
-            $errorTarget = $MockedResponse
+        $Exception = ([System.ArgumentException]"Server responded with Error")
+        $errorId = "ServerResponse"
+        $errorCategory = 'NotSpecified'
+        $errorTarget = $MockedResponse
 
-            $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $Exception, $errorId, $errorCategory, $errorTarget
-            $errorItem.ErrorDetails = "Jira encountered an error: [The issue 'TEST-2' has subtasks.  You must specify the 'deleteSubtasks' parameter to delete this issue and all its subtasks.]"
+        $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord -ArgumentList $Exception, $errorId, $errorCategory, $errorTarget
+        $errorItem.ErrorDetails = "Jira encountered an error: [The issue 'TEST-2' has subtasks.  You must specify the 'deleteSubtasks' parameter to delete this issue and all its subtasks.]"
 
-            $PSCmdlet.WriteError($errorItem)
+        $PSCmdlet.WriteError($errorItem)
+    }
+
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $URI -like "$jiraServer/rest/api/*/issue/TEST-2?deleteSubTasks=True" -and $Method -eq "Delete" } {
+        return $null
+    }
+
+    # Generic catch-all. This will throw an exception if we forgot to mock something.
+    Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        throw "Unidentified call to Invoke-JiraMethod"
+    }
+
+    #############
+    # Tests
+    #############
+
+    Describe "Sanity checking" {
+        $command = Get-Command -Name Remove-JiraIssue
+
+        It "has a parameter 'IssueId' of type [String[]]" {
+            $command | Should -HaveParameter "IssueId" -Type [String[]]
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $URI -like "$jiraServer/rest/api/*/issue/TEST-2?deleteSubTasks=True" -and $Method -eq "Delete" } {
-            return $null
+        It "has an alias 'Id' for parameter 'IssueId" {
+            $command | Should -HaveParameter "IssueId" -Alias "Id"
         }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
+        It "has an alias 'Key' for parameter 'IssueId" {
+            $command | Should -HaveParameter "IssueId" -Alias "Key"
         }
 
-        #############
-        # Tests
-        #############
-
-        Describe "Sanity checking" {
-            $command = Get-Command -Name Remove-JiraIssue
-
-            defParam $command 'IssueId'
-            defParam $command 'InputObject'
-            defParam $command 'IncludeSubTasks'
-            defParam $command 'Credential'
+        It "has an alias 'issueIdOrKey' for parameter 'IssueId" {
+            $command | Should -HaveParameter "IssueId" -Alias "issueIdOrKey"
         }
 
-        Describe "Functionality" {
+        It "has a parameter 'InputObject' of type [Object[]]" {
+            $command | Should -HaveParameter "InputObject" -Type [Object[]]
+        }
 
-            It "Accepts generic object with the correct properties" {
-                {
-                    $issue = Get-JiraIssue -Key TEST-1
-                    Remove-JiraIssue -Issue $issue -Force
-                } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-            }
+        It "has an alias 'Issue' for parameter 'InputObject" {
+            $command | Should -HaveParameter "InputObject" -Alias "Issue"
+        }
 
-            It "Accepts string-based input as a non-pipelined parameter" {
-                { Remove-JiraIssue -IssueId TEST-1 -Force } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-            }
+        It "has a parameter 'IncludeSubTasks' of type [Switch]" {
+            $command | Should -HaveParameter "IncludeSubTasks" -Type [Switch]
+        }
 
-            It "Accepts a JiraPS.Issue object over the pipeline" {
-                { Get-JiraIssue -Key TEST-1 | Remove-JiraIssue -Force } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-            }
+        It "has an alias 'deleteSubtasks' for parameter 'IncludeSubTasks" {
+            $command | Should -HaveParameter "IncludeSubTasks" -Alias "deleteSubtasks"
+        }
 
-            It "Writes an error on issues with subtasks" {
-                # Pester is not capable of (easily) asserting non-terminating errors,
-                # so the error is upgraded to a terminating one in this situation.
-                { Get-JiraIssue -Key TEST-2 | Remove-JiraIssue -Force -ErrorAction Stop } | Should Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-            }
+        It "has a parameter 'Credential' of type [PSCredential]" {
+            $command | Should -HaveParameter "Credential" -Type [PSCredential]
+        }
 
-            It "Passes on issues with subtasks and -DeleteSubTasks" {
-                { Get-JiraIssue -Key TEST-2 | Remove-JiraIssue -IncludeSubTasks -Force } | Should Not Throw
-                Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-            }
+    }
 
-            It "Validates pipeline input" {
-                { @{id = 1 } | Remove-JiraIssue -ErrorAction Stop } | Should Throw
-            }
+    Describe "Functionality" {
+
+        It "Accepts generic object with the correct properties" {
+            {
+                $issue = Get-JiraIssue -Key TEST-1
+                Remove-JiraIssue -Issue $issue -Force
+            } | Should -Not -Throw
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        }
+
+        It "Accepts string-based input as a non-pipelined parameter" {
+            { Remove-JiraIssue -IssueId TEST-1 -Force } | Should -Not -Throw
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        }
+
+        It "Accepts a JiraPS.Issue object over the pipeline" {
+            { Get-JiraIssue -Key TEST-1 | Remove-JiraIssue -Force } | Should -Not -Throw
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        }
+
+        It "Writes an error on issues with subtasks" {
+            # Pester is not capable of (easily) asserting non-terminating errors,
+            # so the error is upgraded to a terminating one in this situation.
+            { Get-JiraIssue -Key TEST-2 | Remove-JiraIssue -Force -ErrorAction Stop } | Should -Throw
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        }
+
+        It "Passes on issues with subtasks and -DeleteSubTasks" {
+            { Get-JiraIssue -Key TEST-2 | Remove-JiraIssue -IncludeSubTasks -Force } | Should -Not -Throw
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        }
+
+        It "Validates pipeline input" {
+            { @{id = 1 } | Remove-JiraIssue -ErrorAction Stop } | Should -Throw
         }
     }
 }

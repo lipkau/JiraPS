@@ -11,8 +11,8 @@ trigger:
     exclude:
     - refs/tag/*
 
-phases:
-- phase: Phase_1
+jobs:
+- job: Phase_1
   displayName: Build Module
 
   condition: succeeded()
@@ -35,7 +35,7 @@ phases:
       ArtifactName: Release
 
 
-- phase: Phase_2
+- job: Phase_2
   displayName: Test Module on Windows (PSv5)
 
   dependsOn: Phase_1
@@ -66,7 +66,7 @@ phases:
     condition: succeededOrFailed()
 
 
-- phase: Phase_3
+- job: Phase_3
   displayName: Test Module on Ubuntu
 
   dependsOn: Phase_1
@@ -98,7 +98,7 @@ phases:
     condition: succeededOrFailed()
 
 
-- phase: Phase_4
+- job: Phase_4
   displayName: Test Module on macOS
 
   dependsOn: Phase_1
@@ -163,7 +163,7 @@ phases:
 #       testResultsFiles: '**/Test*.xml'
 #     condition: succeededOrFailed()
 
-- phase: Phase_6
+- job: Phase_6
   displayName: Test Module against Cloud Server
 
   dependsOn: Phase_1

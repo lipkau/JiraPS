@@ -1,35 +1,12 @@
 function Get-JiraComponent {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding(DefaultParameterSetName = 'ByID')]
+    [CmdletBinding( DefaultParameterSetName = 'ByID' )]
+    [OutputType( [AtlassianPS.JiraPS.Component] )]
     param(
         [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ByProject' )]
         [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Project" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraProject'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Issue. Expected [JiraPS.Project] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
-        [Object[]]
+        [AtlassianPS.JiraPS.Project[]]
         $Project,
-        <#
-          #ToDo:CustomClass
-          Once we have custom classes, these two parameters can be one
-        #>
 
         [Parameter( Position = 0, Mandatory, ParameterSetName = 'ByID' )]
         [Alias("Id")]
@@ -47,7 +24,15 @@ function Get-JiraComponent {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi = "$server/rest/api/latest{0}"
+        $resourceUri_ByProject = "$server/rest/api/latest/project/{0}/components"
+        $resourceUri_ById = "$server/rest/api/latest/component"
+
+        $parameter = @{
+            Method     = 'GET'
+            OutputType = 'JiraComponent'
+            Credential = $Credential
+            Cmdlet     = $PSCmdlet
+        }
     }
 
     process {
@@ -60,18 +45,10 @@ function Get-JiraComponent {
                     Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_project]"
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_project [$_project]"
 
-                    if ($_project -isnot [string]) {
-                        $_project = $_project.Key
-                    }
-                    $parameter = @{
-                        URI        = $resourceURi -f "/project/$_project/components"
-                        Method     = "GET"
-                        Credential = $Credential
-                    }
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                    $result = Invoke-JiraMethod @parameter
+                    $parameter["Uri"] = $resourceUri_ByProject -f $_project.Key
 
-                    Write-Output (ConvertTo-JiraComponent -InputObject $result)
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
+                    Invoke-JiraMethod @parameter
                 }
             }
             "ByID" {
@@ -79,15 +56,10 @@ function Get-JiraComponent {
                     Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_id]"
                     Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_id [$_id]"
 
-                    $parameter = @{
-                        URI        = $resourceURi -f "/component/$_id"
-                        Method     = "GET"
-                        Credential = $Credential
-                    }
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                    $result = Invoke-JiraMethod @parameter
+                    $parameter["Uri"] = "$resourceUri_ById/$_id"
 
-                    Write-Output (ConvertTo-JiraComponent -InputObject $result)
+                    Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
+                    Invoke-JiraMethod @parameter
                 }
             }
         }

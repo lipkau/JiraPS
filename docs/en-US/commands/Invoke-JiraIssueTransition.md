@@ -123,7 +123,7 @@ Accept wildcard characters: False
 
 ### -Fields
 
-Any additional fields that should be updated.
+Any additional fields that Should be updated.
 
 Fields must be configured to appear on the transition screen to use this parameter.
 
@@ -160,7 +160,7 @@ Accept wildcard characters: False
 
 ### -Comment
 
-Comment that should be added to JIRA.
+Comment that Should be added to JIRA.
 
 Comment field must be configured to appear on the transition screen to use this parameter.
 
@@ -195,7 +195,7 @@ Accept wildcard characters: False
 
 ### -PassThru
 
-Whether output should be provided after invoking this function.
+Whether output Should be provided after invoking this function.
 
 ```yaml
 Type: SwitchParameter

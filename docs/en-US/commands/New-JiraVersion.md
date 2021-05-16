@@ -66,7 +66,7 @@ This example duplicates the Version named "1.0.0.0" in Project "RD" to Project "
 ## PARAMETERS
 
 ### -InputObject
-Version object that should be created on the server.
+Version object that Should be created on the server.
 
 ```yaml
 Type: Object

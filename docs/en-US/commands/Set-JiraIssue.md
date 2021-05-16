@@ -16,9 +16,12 @@ Modifies an existing issue in JIRA
 ## SYNTAX
 
 ```powershell
-Set-JiraIssue [-Issue] <Object[]> [[-Summary] <String>] [[-Description] <String>] [[-FixVersion] <String[]>]
- [[-Assignee] <Object>] [[-Label] <String[]>] [[-Fields] <PSCustomObject>] [[-AddComment] <String>]
- [[-Credential] <PSCredential>] [-SkipNotification] [-PassThru] [-WhatIf] [-Confirm] [<CommonParameters>]
+Set-JiraIssue [-Issue] <Object[]> [[-Summary] <String>]
+[[-Description] <String>] [[-FixVersion] <String[]>]
+[[-Assignee] <AtlassianPS.JiraPS.User>] [[-Label] <String[]>]
+[[-Fields] <PSCustomObject>] [[-AddComment] <String>]
+[[-Credential] <PSCredential>] [-SkipNotification] [-PassThru] [-WhatIf]
+[-Confirm] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -166,7 +169,7 @@ New assignee of the issue.
 Use the value `Unassigned` to remove the current assignee of the issue.
 
 ```yaml
-Type: Object
+Type: AtlassianPS.JiraPS.User
 Parameter Sets: (All)
 Aliases:
 
@@ -199,7 +202,7 @@ Accept wildcard characters: False
 
 ### -Fields
 
-Any additional fields that should be updated.
+Any additional fields that Should be updated.
 
 Inspect [about_JiraPS_CustomFields](../../about/custom-fields.html) for more information.
 
@@ -266,7 +269,7 @@ Accept wildcard characters: False
 
 ### -PassThru
 
-Whether output should be provided after invoking this function.
+Whether output Should be provided after invoking this function.
 
 ```yaml
 Type: SwitchParameter
@@ -315,12 +318,20 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction,
+-ErrorVariable, -InformationAction, -InformationVariable, -OutVariable,
+-OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters (<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### [JiraPS.Issue] / [String] / [Int]
+### [JiraPS.Issue]
+
+### [String]
+
+### [Int]
+
+### [AtlassianPS.JiraPS.User]
 
 ## OUTPUTS
 
@@ -332,7 +343,8 @@ Otherwise, this function does not provide output.
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 
@@ -351,6 +363,8 @@ If neither are supplied, this function will run with anonymous access to JIRA.
 [Get-JiraPriority](../Get-JiraPriority/)
 
 [Get-JiraProject](../Get-JiraProject/)
+
+[Get-JiraUser](../Get-JiraUser/)
 
 [Get-JiraVersion](../Get-JiraVersion/)
 

@@ -1,4 +1,4 @@
-﻿function New-JiraGroup {
+function New-JiraGroup {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
     param(
@@ -29,21 +29,16 @@
             Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_group]"
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_group [$_group]"
 
-            $requestBody = @{
-                "name" = $_group
-            }
-
             $parameter = @{
                 URI        = $resourceURi
                 Method     = "POST"
-                Body       = ConvertTo-Json -InputObject $requestBody
+                Body       = ConvertTo-Json -InputObject @{ "name" = $_group }
+                OutputType = "JiraGroup"
                 Credential = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
             if ($PSCmdlet.ShouldProcess($GroupName, "Creating group [$GroupName] to JIRA")) {
-                $result = Invoke-JiraMethod @parameter
-
-                Write-Output (ConvertTo-JiraGroup -InputObject $result)
+                Invoke-JiraMethod @parameter
             }
         }
     }

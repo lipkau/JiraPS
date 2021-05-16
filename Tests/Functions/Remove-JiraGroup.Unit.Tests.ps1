@@ -1,27 +1,22 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Remove-JiraGroup" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'http://jiraserver.example.com'
 
-        . "$PSScriptRoot/../Shared.ps1"
+    $testGroupName = 'testGroup'
 
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $testGroupName = 'testGroup'
-
-        $testJson = @"
+    $testJson = @"
 {
     "name": "$testGroupName",
     "self": "$jiraServer/rest/api/2/group?groupname=$testGroupName",
@@ -36,54 +31,53 @@ Describe "Remove-JiraGroup" -Tag 'Unit' {
 }
 "@
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+    Mock Get-JiraConfigServer -ModuleName JiraPS {
+        Write-Output $jiraServer
+    }
 
-        Mock Get-JiraGroup -ModuleName JiraPS {
-            $object = ConvertFrom-Json $testJson
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Group')
-            return $object
-        }
+    Mock Get-JiraGroup -ModuleName JiraPS {
+        $object = ConvertFrom-Json $testJson
+        $object.PSObject.TypeNames.Insert(0, 'JiraPS.Group')
+        return $object
+    }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'DELETE' -and $URI -like "$jiraServer/rest/api/*/group?groupname=$testGroupName" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            # This REST method should produce no output
-        }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'DELETE' -and $URI -like "$jiraServer/rest/api/*/group?groupname=$testGroupName" } {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        # This REST method should produce no output
+    }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
+    # Generic catch-all. This will throw an exception if we forgot to mock something.
+    Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        throw "Unidentified call to Invoke-JiraMethod"
+    }
 
-        #############
-        # Tests
-        #############
+    #############
+    # Tests
+    #############
 
-        It "Accepts a group name as a String to the -Group parameter" {
-            { Remove-JiraGroup -Group $testGroupName -Force } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-        }
+    It "Accepts a group name as a String to the -Group parameter" {
+        { Remove-JiraGroup -Group $testGroupName -Force } | Should -Not -Throw
+        Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+    }
 
-        It "Accepts a JiraPS.Group object to the -Group parameter" {
-            $group = Get-JiraGroup -GroupName $testGroupName
-            { Remove-JiraGroup -Group $group -Force } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-        }
+    It "Accepts a JiraPS.Group object to the -Group parameter" {
+        $group = Get-JiraGroup -GroupName $testGroupName
+        { Remove-JiraGroup -Group $group -Force } | Should -Not -Throw
+        Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+    }
 
-        It "Accepts pipeline input from Get-JiraGroup" {
-            { Get-JiraGroup -GroupName $testGroupName | Remove-JiraGroup -Force } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-        }
+    It "Accepts pipeline input from Get-JiraGroup" {
+        { Get-JiraGroup -GroupName $testGroupName | Remove-JiraGroup -Force } | Should -Not -Throw
+        Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+    }
 
-        It "Removes a group from JIRA" {
-            { Remove-JiraGroup -Group $testGroupName -Force } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
-        }
+    It "Removes a group from JIRA" {
+        { Remove-JiraGroup -Group $testGroupName -Force } | Should -Not -Throw
+        Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+    }
 
-        It "Provides no output" {
-            Remove-JiraGroup -Group $testGroupName -Force | Should BeNullOrEmpty
-        }
+    It "Provides no output" {
+        Remove-JiraGroup -Group $testGroupName -Force | Should -BeNullOrEmpty
     }
 }

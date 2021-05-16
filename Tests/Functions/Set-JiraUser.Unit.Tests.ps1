@@ -1,104 +1,116 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Set-JiraUser" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
+
+        #Sample response from the server
+        $userResponse = @{
+            "RestUrl"      = "http://jiraserver.example.com/rest/api/2/user?username=testUser"
+            "key"          = "testUsername"
+            "name"         = "testUsername"
+            "displayName"  = "testDisplayName"
+            "emailAddress" = "test@email.com"
+            "active"       = $true
+        }
+
+        #region Mocking
+        Invoke-CommonMocking
+
+        Mock Get-JiraUser {
+            [AtlassianPS.JiraPS.User]@{
+                "restUrl" = "http://jiraserver.example.com/rest/api/2/user?username=testUser"
+            }
+        }
+
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Put' -and
+            $URI -like "*/user?username=testUser"
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+            [PSCustomObject]$userResponse
+        }
+        #endregion Mocking
+
+        $user = Get-JiraUser -UserName "testUser" -ErrorAction Stop
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    Describe "Behavior checking" {
+        It "Changes a User" {
+            Set-JiraUser -User "testUser" -DisplayName "newName" -ErrorAction Stop
 
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $testUsername = 'powershell-test'
-        $testDisplayName = 'PowerShell Test User'
-        $testEmail = "$testUsername@example.com"
-
-        $testDisplayNameChanged = "$testDisplayName Modified"
-        $testEmailChanged = "$testUsername@example2.com"
-
-        $restResultGet = @"
-{
-    "self": "$jiraServer/rest/api/2/user?username=$testUsername",
-    "key": "$testUsername",
-    "name": "$testUsername",
-    "displayName": "$testDisplayName",
-    "emailAddress": "$testEmail",
-    "active": true
-}
-"@
-
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It -ParameterFilter {
+                $Method -eq 'Put' -and
+                $OutputType -eq "JiraUser"
+            }
         }
 
-        Mock Get-JiraUser -ModuleName JiraPS {
-            $object = ConvertFrom-Json $restResultGet
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.User')
-            return $object
+        It "Changes a User using the pipeline" {
+            $user | Set-JiraUser -DisplayName "newName" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It -ParameterFilter { $Method -eq 'Put' }
         }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'Put' -and $URI -eq "$jiraServer/rest/api/latest/user?username=$testUsername" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            ConvertFrom-Json $restResultGet
-        }
+        It "fetches the user if an incomplete object was provided" {
+            Set-JiraUser -User "testUser" -DisplayName "NewName" -ErrorAction Stop
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
-
-        #############
-        # Tests
-        #############
-
-        It "Accepts a username as a String to the -User parameter" {
-            { Set-JiraUser -User $testUsername -DisplayName $testDisplayNameChanged } | Should Not Throw
             Assert-MockCalled -CommandName Get-JiraUser -Exactly -Times 1 -Scope It
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
         }
 
-        It "Accepts a JiraPS.User object to the -User parameter" {
-            $user = Get-JiraUser -UserName $testUsername
-            { Set-JiraUser -User $user -DisplayName $testDisplayNameChanged } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        It "uses the provided user when a complete object was provided" {
+            $user | Set-JiraUser -DisplayName "NewName" -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraUser -Exactly -Times 0 -Scope It
         }
 
-        It "Accepts pipeline input from Get-JiraUser" {
-            { Get-JiraUser -UserName $testUsername | Set-JiraUser -DisplayName $testDisplayNameChanged } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        It "can change an User with a Hashtable" {
+            Set-JiraUser -User $user -Property @{ invalidProperty = "value" } -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It -ParameterFilter { $Body -like '*invalidProperty*' }
         }
 
-        It "Modifies a user's DisplayName if the -DisplayName parameter is passed" {
-            # This is not a great test.
-            { Set-JiraUser -User $testUsername -DisplayName $testDisplayNameChanged } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        It "returns an User when using PassThru" {
+            $r1 = Set-JiraUser -User $user -DisplayName "newName" -ErrorAction Stop
+            $r2 = Set-JiraUser -User $user -DisplayName "newName" -ErrorAction Stop -PassThru
+
+            $r1 | Should -BeNullOrEmpty
+            $r2 | Should -Not -BeNullOrEmpty
         }
 
-        It "Modifies a user's EmailAddress if the -EmailAddress parameter is passed" {
-            # Neither is this one.
-            { Set-JiraUser -User $testUsername -EmailAddress $testEmailChanged } | Should Not Throw
-            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 1 -Scope It
+        It "validates the Email Address input" {
+            { Set-JiraUser -User $user -EmailAddress "invalidEmail" -ErrorAction Stop } | Should -Throw -ExpectedMessage "Invalid Argument"
         }
 
-        It "Provides no output if the -PassThru parameter is not passed" {
-            $output = Set-JiraUser -User $testUsername -DisplayName $testDisplayNameChanged
-            $output | Should BeNullOrEmpty
+        It "does not call the api when no parameters are changed" {
+            Set-JiraUser -User $user -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Invoke-JiraMethod -Exactly -Times 0 -Scope It
+        }
+    }
+
+    Describe "Input testing" {
+        It "Can change the display name of an User" {
+            Set-JiraUser -User $user -DisplayName "newName" -ErrorAction Stop
         }
 
-        It "Outputs a JiraPS.User object if the -PassThru parameter is passed" {
-            $output = Set-JiraUser -User $testUsername -DisplayName $testDisplayNameChanged -PassThru
-            $output | Should Not BeNullOrEmpty
+        It "Can change the email address of an User" {
+            Set-JiraUser -User $user -EmailAddress "new@email.com" -ErrorAction Stop
+        }
+
+        It "Can change the active status of an User" {
+            Set-JiraUser -User $user -Active $true -ErrorAction Stop
+            Set-JiraUser -User $user -Active $false -ErrorAction Stop
+        }
+
+        It "Can change an User with a property map" {
+            Set-JiraUser -User $user -Property @{ active = $true } -ErrorAction Stop
         }
     }
 }

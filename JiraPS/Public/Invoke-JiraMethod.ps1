@@ -7,7 +7,7 @@ function Invoke-JiraMethod {
         $URI,
 
         [Microsoft.PowerShell.Commands.WebRequestMethod]
-        $Method = "GET",
+        $Method = 'GET',
 
         [String]
         $Body,
@@ -16,10 +16,10 @@ function Invoke-JiraMethod {
         $RawBody,
 
         [Hashtable]
-        $Headers = @{},
+        $Headers = @{ },
 
         [Hashtable]
-        $GetParameter = @{},
+        $GetParameter = @{ },
 
         [Switch]
         $Paging,
@@ -34,7 +34,19 @@ function Invoke-JiraMethod {
         $StoreSession,
 
         [ValidateSet(
+            'JiraAttachment',
+            'JiraComment',
+            'JiraField',
+            'JiraFilter',
+            'JiraFilterPermission',
+            'JiraGroup',
+            'JiraIssue',
             'JiraIssueType',
+            'JiraProject',
+            'JiraRole',
+            'JiraServerInfo',
+            'JiraUser',
+            'JiraVersion'
         )]
         [String]
         $OutputType,
@@ -67,7 +79,7 @@ function Invoke-JiraMethod {
         # - Headers passes as parameters
         # - User's Headers in $PSDefaultParameterValues
         # - Module's default Headers
-        $_headers = Join-Hashtable -Hashtable $script:DefaultHeaders, $PSDefaultParameterValues["Invoke-WebRequest:Headers"], $Headers
+        $_headers = Join-Hashtable -InputObject $script:DefaultHeaders, $PSDefaultParameterValues['Invoke-WebRequest:Headers'], $Headers
         #endregion Headers
 
         #region Manage URI
@@ -76,27 +88,27 @@ function Invoke-JiraMethod {
         $internalGetParameter = Join-Hashtable $uriQuery, $GetParameter
 
         # And remove it from URI
-        [Uri]$Uri = $Uri.GetLeftPart("Path")
+        [Uri]$Uri = $Uri.GetLeftPart('Path')
         $PaginatedUri = $Uri
 
         # Use default PageSize
-        if (-not $internalGetParameter.ContainsKey("maxResults")) {
-            $internalGetParameter["maxResults"] = $script:DefaultPageSize
+        if (-not $internalGetParameter.ContainsKey('maxResults')) {
+            $internalGetParameter['maxResults'] = $script:DefaultPageSize
         }
 
         # Append GET parameters to URi
         $offset = 0
         if ($PSCmdlet.PagingParameters) {
             if ($PSCmdlet.PagingParameters.Skip) {
-                $internalGetParameter["startAt"] = $PSCmdlet.PagingParameters.Skip
+                $internalGetParameter['startAt'] = $PSCmdlet.PagingParameters.Skip
                 $offset = $PSCmdlet.PagingParameters.Skip
             }
-            if ($PSCmdlet.PagingParameters.First -lt $internalGetParameter["maxResults"]) {
-                $internalGetParameter["maxResults"] = $PSCmdlet.PagingParameters.First
+            if ($PSCmdlet.PagingParameters.First -lt $internalGetParameter['maxResults']) {
+                $internalGetParameter['maxResults'] = $PSCmdlet.PagingParameters.First
             }
         }
 
-        [Uri]$PaginatedUri = "{0}{1}" -f $PaginatedUri, (ConvertTo-GetParameter $internalGetParameter)
+        [Uri]$PaginatedUri = '{0}{1}' -f $PaginatedUri, (ConvertTo-GetParameter $internalGetParameter)
         #endregion Manage URI
 
         #region Constructe IWR Parameter
@@ -107,44 +119,44 @@ function Invoke-JiraMethod {
             ContentType     = $script:DefaultContentType
             UseBasicParsing = $true
             Credential      = $Credential
-            ErrorAction     = "Stop"
+            ErrorAction     = 'Stop'
             Verbose         = $false
         }
 
-        if ($_headers.ContainsKey("Content-Type")) {
-            $splatParameters["ContentType"] = $_headers["Content-Type"]
-            $splatParameters["Headers"].Remove("Content-Type")
-            $_headers.Remove("Content-Type")
+        if ($_headers.ContainsKey('Content-Type')) {
+            $splatParameters['ContentType'] = $_headers['Content-Type']
+            $splatParameters['Headers'].Remove('Content-Type')
+            $_headers.Remove('Content-Type')
         }
 
         if ($Body) {
             if ($RawBody) {
-                $splatParameters["Body"] = $Body
+                $splatParameters['Body'] = $Body
             }
             else {
                 # Encode Body to preserve special chars
                 # http://stackoverflow.com/questions/15290185/invoke-webrequest-issue-with-special-characters-in-json
-                $splatParameters["Body"] = [System.Text.Encoding]::UTF8.GetBytes($Body)
+                $splatParameters['Body'] = [System.Text.Encoding]::UTF8.GetBytes($Body)
             }
         }
 
         if ((-not $Credential) -or ($Credential -eq [System.Management.Automation.PSCredential]::Empty)) {
-            $splatParameters.Remove("Credential")
+            $splatParameters.Remove('Credential')
             if ($session = Get-JiraSession -ErrorAction SilentlyContinue) {
-                $splatParameters["WebSession"] = $session.WebSession
+                $splatParameters['WebSession'] = $session.WebSession
             }
         }
 
         if ($StoreSession) {
-            $splatParameters["SessionVariable"] = "newSessionVar"
-            $splatParameters.Remove("WebSession")
+            $splatParameters['SessionVariable'] = 'newSessionVar'
+            $splatParameters.Remove('WebSession')
         }
 
         if ($InFile) {
-            $splatParameters["InFile"] = $InFile
+            $splatParameters['InFile'] = $InFile
         }
         if ($OutFile) {
-            $splatParameters["OutFile"] = $OutFile
+            $splatParameters['OutFile'] = $OutFile
         }
         #endregion Constructe IWR Parameter
 
@@ -176,11 +188,14 @@ function Invoke-JiraMethod {
 
     process {
         if ($webResponse) {
-            # In PowerShellCore (v6+) the StatusCode of an exception is somewhere else
-            if (-not ($statusCode = $webResponse.StatusCode)) {
+            if ($webResponse.StatusCode) {
+                $statusCode = $webResponse.StatusCode
+            }
+            else {
+                # In PowerShellCore (v6+) the StatusCode of an exception is somewhere else
                 $statusCode = $webResponse.Exception.Response.StatusCode
             }
-            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Status code: $($statusCode)"
+            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Status code: $statusCode"
 
             #region Code 400+
             if ($statusCode.value__ -ge 400) {
@@ -200,10 +215,10 @@ function Invoke-JiraMethod {
                     if ($Paging) {
                         # Remove Parameters that don't need propagation
                         $script:PSDefaultParameterValues.Remove("$($MyInvocation.MyCommand.Name):IncludeTotalCount")
-                        $null = $PSBoundParameters.Remove("Paging")
-                        $null = $PSBoundParameters.Remove("Skip")
-                        if (-not $PSBoundParameters["GetParameter"]) {
-                            $PSBoundParameters["GetParameter"] = $internalGetParameter
+                        $null = $PSBoundParameters.Remove('Paging')
+                        $null = $PSBoundParameters.Remove('Skip')
+                        if (-not $PSBoundParameters['GetParameter']) {
+                            $PSBoundParameters['GetParameter'] = $internalGetParameter
                         }
 
                         $total = 0
@@ -220,8 +235,8 @@ function Invoke-JiraMethod {
                                 $result = $result | Select-Object -First ($PSCmdlet.PagingParameters.First % $pageSize)
                             }
 
-                            Convert-Result -InputObject $result -OutputType $OutputType
                             Write-DebugMessage ($result | Out-String)
+                            Convert-Result -InputObject $result -OutputType $OutputType
 
                             if (@($result).Count -lt $response.maxResults) {
                                 Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Stopping paging, as page had less entries than $($response.maxResults)"
@@ -234,11 +249,11 @@ function Invoke-JiraMethod {
                             }
 
                             # calculate the size of the next page
-                            $PSBoundParameters["GetParameter"]["startAt"] = $total + $offset
-                            $expectedTotal = $PSBoundParameters["GetParameter"]["startAt"] + $pageSize
+                            $PSBoundParameters['GetParameter']['startAt'] = $total + $offset
+                            $expectedTotal = $PSBoundParameters['GetParameter']['startAt'] + $pageSize
                             if ($expectedTotal -gt $PSCmdlet.PagingParameters.First) {
                                 $reduceBy = $expectedTotal - $PSCmdlet.PagingParameters.First
-                                $PSBoundParameters["GetParameter"]["maxResults"] = $pageSize - $reduceBy
+                                $PSBoundParameters['GetParameter']['maxResults'] = $pageSize - $reduceBy
                             }
 
                             # Inquire the next page

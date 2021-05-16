@@ -62,6 +62,12 @@ Describe "Get-JiraProject" -Tag 'Unit' {
             }
             Assert-MockCalled @assertMockCalledSplat
         }
+
+        It 'Converts results to [AtlassianPS.JiraPS.Role]' {
+            Get-JiraRole -Role '1000'
+
+            Assert-MockCalled @assertMockCalledSplat -ParameterFilter { $OutputType -eq "JiraRole" }
+        }
     }
 
     Describe 'Input testing' {

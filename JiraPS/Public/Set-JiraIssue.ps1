@@ -1,31 +1,11 @@
 function Set-JiraIssue {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
+    [OutputType( [AtlassianPS.JiraPS.Issue] )]
     param(
-        [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
-        [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Issue" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraIssue'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Issue. Expected [JiraPS.Issue] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
+        [Parameter( Mandatory, ValueFromPipeline )]
         [Alias('Key')]
-        [Object[]]
+        [AtlassianPS.JiraPS.Issue[]]
         $Issue,
 
         [String]
@@ -35,10 +15,10 @@ function Set-JiraIssue {
         $Description,
 
         [Alias('FixVersions')]
-        [String[]]
+        [AtlassianPS.JiraPS.Version[]]
         $FixVersion,
 
-        [Object]
+        [AtlassianPS.JiraPS.User]
         $Assignee,
 
         [String[]]
@@ -50,16 +30,16 @@ function Set-JiraIssue {
         [String]
         $AddComment,
 
+        [Switch]
+        $SkipNotification,
+
         [Parameter()]
         [System.Management.Automation.PSCredential]
         [System.Management.Automation.Credential()]
         $Credential = [System.Management.Automation.PSCredential]::Empty,
 
         [Switch]
-        $PassThru,
-
-        [Switch]
-        $SkipNotification
+        $PassThru
     )
 
     begin {
@@ -75,43 +55,6 @@ function Set-JiraIssue {
             Write-Error @errorMessage
             return
         }
-
-        if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Assignee")) {
-            if ($Assignee -eq 'Unassigned') {
-                <#
-                  #ToDo:Deprecated
-                  This behavior should be deprecated
-                #>
-                Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] 'Unassigned' String passed. Issue will be assigned to no one."
-                $assigneeString = $null
-                $validAssignee = $true
-            }
-            elseif ($Assignee -eq "Default") {
-                <#
-                  #ToDo:Deprecated
-                  This behavior should be deprecated
-                #>
-                Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] 'Default' String passed. Issue will be assigned to the default assignee."
-                $assigneeString = "-1"
-                $validAssignee = $true
-            }
-            else {
-                if ($assigneeObj = Resolve-JiraUser -InputObject $Assignee -Exact -Credential $Credential) {
-                    Write-Debug "[$($MyInvocation.MyCommand.Name)] User found (name=[$($assigneeObj.Name)],RestUrl=[$($assigneeObj.RestUrl)])"
-                    $assigneeString = $assigneeObj.Name
-                    $validAssignee = $true
-                }
-                else {
-                    $exception = ([System.ArgumentException]"Invalid value for Parameter")
-                    $errorId = 'ParameterValue.InvalidAssignee'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $Assignee
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Unable to validate Jira user [$Assignee]. Use Get-JiraUser for more details."
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                }
-            }
-        }
     }
 
     process {
@@ -122,11 +65,12 @@ function Set-JiraIssue {
             Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_issue]"
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_issue [$_issue]"
 
-            # Find the proper object for the Issue
-            $issueObj = Resolve-JiraIssueObject -InputObject $_issue -Credential $Credential
+            if (-not $_issue.RestURL) {
+                $_issue = Get-JiraIssue -Issue $_issue.Key -Credential $Credential -ErrorAction Stop
+            }
 
             $issueProps = @{
-                'update' = @{}
+                'update' = @{ }
             }
 
             if ($Summary) {
@@ -141,7 +85,7 @@ function Set-JiraIssue {
             if ($FixVersion) {
                 $fixVersionSet = [System.Collections.ArrayList]@()
                 foreach ($item in $FixVersion) {
-                    $null = $fixVersionSet.Add( @{ 'name' = $item } )
+                    $null = $fixVersionSet.Add( @{ 'name' = $item.Name } )
                 }
                 $issueProps.update["fixVersions"] = @( @{ set = $fixVersionSet } )
             }
@@ -159,71 +103,74 @@ function Set-JiraIssue {
             if ($Fields) {
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Resolving `$Fields"
                 foreach ($_key in $Fields.Keys) {
-                    $name = $_key
-                    $value = $Fields.$_key
-
-                    $field = Get-JiraField -Field $name -Credential $Credential -ErrorAction Stop
+                    $field = Get-JiraField -Field $_key -Credential $Credential -ErrorAction SilentlyContinue
+                    if (-not $field) {
+                        $writeErrorSplat = @{
+                            Exception    = $exception
+                            ErrorId      = $errorId
+                            Category     = $errorCategory
+                            Message      = Out-String -InputObject $_error
+                            TargetObject = $targetObject
+                            Cmdlet       = $Cmdlet
+                        }
+                        WriteError @writeErrorSplat
+                        continue
+                    }
 
                     # For some reason, this was coming through as a hashtable instead of a String,
                     # which was causing ConvertTo-Json to crash later.
                     # Not sure why, but this forces $id to be a String and not a hashtable.
                     $id = [string]$field.Id
-                    $issueProps.update[$id] = @(@{ 'set' = $value })
+                    $issueProps.update[$id] = @(@{ 'set' = $Fields.$_key })
                 }
             }
 
-            if ($validAssignee) {
-                $assigneeProps = @{
-                    'name' = $assigneeString
-                }
-            }
-
-            $SkipNotificationParams = @{}
+            $getParameters = @{ }
             if ($SkipNotification) {
                 Write-Verbose "[$($MyInvocation.MyCommand.Name)] Skipping notification for watchers"
-                $SkipNotificationParams = @{notifyUsers = "false"}
+                $getParameters["notifyUsers"] = "false"
             }
 
             if ( @($issueProps.update.Keys).Count -gt 0 ) {
                 Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Updating issue fields"
 
                 $parameter = @{
-                    URI          = $issueObj.RestUrl
+                    URI          = $_issue.RestUrl
                     Method       = "PUT"
                     Body         = ConvertTo-Json -InputObject $issueProps -Depth 10
                     Credential   = $Credential
-                    GetParameter = $SkipNotificationParams
+                    GetParameter = $getParameters
                 }
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                if ($PSCmdlet.ShouldProcess($issueObj.Key, "Updating Issue")) {
+                if ($PSCmdlet.ShouldProcess($_issue.Key, "Updating Issue")) {
                     Invoke-JiraMethod @parameter
                 }
             }
 
-            if ($assigneeProps) {
+            if ($Assignee) {
                 Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Updating issue assignee"
                 # Jira handles assignee differently; you can't change it from the default "edit issues" screen unless
                 # you customize the "Edit Issue" screen.
 
                 $parameter = @{
-                    URI          = "{0}/assignee" -f $issueObj.RestUrl
+                    URI          = "{0}/assignee" -f $_issue.RestUrl
                     Method       = "PUT"
-                    Body         = ConvertTo-Json -InputObject $assigneeProps
+                    Body         = ConvertTo-Json -InputObject @{ $Assignee.identify()['key'] = $Assignee.identify()['value'] }
                     Credential   = $Credential
-                    GetParameter = $SkipNotificationParams
+                    GetParameter = $getParameters
                 }
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-                if ($PSCmdlet.ShouldProcess($issueObj.Key, "Updating Issue [Assignee] from JIRA")) {
+                if ($PSCmdlet.ShouldProcess($_issue.Key, "Updating Issue [Assignee] from JIRA")) {
                     Invoke-JiraMethod @parameter
                 }
             }
 
             if ($Label) {
-                Set-JiraIssueLabel -Issue $issueObj -Set $Label -Credential $Credential
+                Set-JiraIssueLabel -Issue $_issue -Set $Label -Credential $Credential
             }
 
             if ($PassThru) {
-                Get-JiraIssue -Key $issueObj.Key -Credential $Credential
+                Get-JiraIssue -Issue $_issue -Credential $Credential
             }
         }
     }

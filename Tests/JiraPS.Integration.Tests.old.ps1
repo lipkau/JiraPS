@@ -1,4 +1,4 @@
-Describe 'Load Module' -Tag 'Integration' {
+<# Describe 'Load Module' -Tag 'Integration' {
     # ARRANGE
     Remove-Module JiraPS -Force -ErrorAction SilentlyContinue
 
@@ -408,6 +408,7 @@ InModuleScope JiraPS {
             { Get-JiraGroup $groups -ErrorAction Stop } | Should -Throw
         }
 
-    } #>
+    } # >
 
 }
+ #>

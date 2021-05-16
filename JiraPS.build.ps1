@@ -1,6 +1,6 @@
 #requires -Modules InvokeBuild
 
-[CmdletBinding()]
+[CmdletBinding( )]
 [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingWriteHost', '')]
 [System.Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidUsingEmptyCatchBlock', '')]
 param(

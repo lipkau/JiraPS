@@ -1,25 +1,39 @@
-﻿function Add-JiraFilterPermission {
+function Add-JiraFilterPermission {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( SupportsShouldProcess, DefaultParameterSetName = 'ByInputObject' )]
-    # [OutputType( [JiraPS.FilterPermission] )]
+    [CmdletBinding( SupportsShouldProcess, DefaultParameterSetName = 'Global' )]
+    [OutputType( [AtlassianPS.JiraPS.FilterPermission] )]
     param(
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ByInputObject' )]
-        [ValidateNotNullOrEmpty()]
-        [PSTypeName('JiraPS.Filter')]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
+        [AtlassianPS.JiraPS.Filter]
         $Filter,
 
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ById')]
-        [ValidateNotNullOrEmpty()]
-        [UInt32[]]
-        $Id,
+        [Parameter( Mandatory, ParameterSetName = 'Global')]
+        [Switch]
+        $Global,
 
-        [Parameter( Mandatory )]
-        [ValidateNotNullOrEmpty()]
-        [ValidateSet('Group', 'Project', 'ProjectRole', 'Authenticated', 'Global')]
-        [String]$Type,
+        [Parameter( Mandatory, ParameterSetName = 'Authenticated' )]
+        [Switch]
+        $Authenticated,
 
-        [Parameter()]
-        [String]$Value,
+        [Parameter( Mandatory, ParameterSetName = 'Project' )]
+        [AtlassianPS.JiraPS.Project]
+        $Project,
+
+        [Parameter( ParameterSetName = 'Project' )]
+        [Alias('ProjectRole')]
+        [AtlassianPS.JiraPS.Role]
+        $Role,
+
+        [Parameter( Mandatory, ParameterSetName = 'Group' )]
+        [AtlassianPS.JiraPS.Group]
+        $Group,
+
+        # Jira Server allows for granting "view" and "edit" permissions
+        # [Parameter()]
+        # [ValidateNotNullOrEmpty()]
+        # [ValidateSet('Viewer', 'Editor')]
+        # [String]
+        # $Type = "Viewer",
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -30,47 +44,71 @@
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
 
-        $resourceURi = "{0}/permission"
+        $server = Get-JiraConfigServer -ErrorAction Stop
+
+        $parameter = @{
+            Method     = "POST"
+            OutputType = 'JiraFilterPermission'
+            Credential = $Credential
+            Cmdlet     = $PSCmdlet
+        }
+
+        $resourceURi = "$server/rest/api/latest/filter/{0}/permission"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        if ($PSCmdlet.ParameterSetName -eq 'ById') {
-            $Filter = Get-JiraFilter -Id $Id
+        if (-not $Filter.Id) {
+            $Filter = Get-JiraFilter $Filter -Credential $Credential -ErrorAction Stop
         }
 
-        $body = @{
-            type = $Type.ToLower()
+        if (-not $Filter.Id) {
+            $writeErrorSplat = @{
+                Exception    = "Missing property for identification"
+                ErrorId      = "InvalidData.Filter.MissingIdentificationProperty"
+                Category     = "InvalidData"
+                Message      = "Filter needs to be identifiable by Id. Id was missing."
+                TargetObject = $Filter
+            }
+            WriteError @writeErrorSplat
+            return
         }
-        switch ($Type) {
-            "Group" {
-                $body["groupname"] = $Value
-            }
-            "Project" {
-                $body["projectId"] = $Value
-            }
-            "ProjectRole" {
-                $body["projectRoleId"] = $Value
-            }
-            "Authenticated" { }
+
+        $type = $PSCmdlet.ParameterSetName
+        $body = @{ type = $type.ToLower() }
+        switch ($type) {
             "Global" { }
+            "Authenticated" { }
+            "Project" {
+                if (-not ($Project.Id -and $Project.Key)) {
+                    $Project = Get-JiraProject $Project -Credential $Credential -ErrorAction Stop
+                }
+
+                $body["projectId"] = $Project.Id
+
+                if ($Role) {
+                    if ((-not $Role.Id) -and $Role.Name) {
+                        $Role = Get-JiraRole -Project $Project -Credential $Credential -ErrorAction Stop |
+                        Where-Object { $_.Name -eq $Role.Name }
+                    }
+
+                    $body["type"] = "projectRole"
+                    $body["projectRoleId"] = $Role.Id
+                }
+            }
+            "Group" {
+                $body["groupname"] = $Group.Name
+            }
         }
 
-        foreach ($_filter in $Filter) {
-            $parameter = @{
-                URI        = $resourceURi -f $_filter.RestURL
-                Method     = "POST"
-                Body       = ConvertTo-Json $body
-                Credential = $Credential
-            }
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($PSCmdlet.ShouldProcess($_filter.Name, "Add Permission [$Type - $Value]")) {
-                $result = Invoke-JiraMethod @parameter
+        $parameter['Uri'] = $resourceURi -f $Filter.Id
+        $parameter['Body'] = ConvertTo-Json $body
 
-                Write-Output (ConvertTo-JiraFilter -InputObject $_filter -FilterPermissions $result)
-            }
+        Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
+        if ($PSCmdlet.ShouldProcess($Filter.ToString(), "Adding Permission [$type]")) {
+            Invoke-JiraMethod @parameter
         }
     }
 

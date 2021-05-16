@@ -1,9 +1,9 @@
-﻿function Remove-JiraIssueWatcher {
+function Remove-JiraIssueWatcher {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
     param(
         [Parameter( Mandatory )]
-        [string[]]
+        [AtlassianPS.JiraPS.User[]]
         $Watcher,
 
         [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
@@ -49,17 +49,20 @@
         # Find the proper object for the Issue
         $issueObj = Resolve-JiraIssueObject -InputObject $Issue -Credential $Credential
 
-        foreach ($username in $Watcher) {
-            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$username]"
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$username [$username]"
+        foreach ($_watcher in $Watcher) {
+            Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_watcher]"
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_watcher [$_watcher]"
 
             $parameter = @{
-                URI        = "{0}/watchers?username={1}" -f $issueObj.RestURL, $username
-                Method     = "DELETE"
-                Credential = $Credential
+                URI          = "{0}/watchers" -f $issueObj.RestURL
+                Method       = "DELETE"
+                GetParameter = @{
+                    $_watcher.identify()["key"] = $_watcher.identify()["value"]
+                }
+                Credential   = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($PSCmdlet.ShouldProcess($IssueObj.Key, "Removing watcher '$($username)'")) {
+            if ($PSCmdlet.ShouldProcess($IssueObj.Key, "Removing watcher '$_watcher'")) {
                 Invoke-JiraMethod @parameter
             }
         }

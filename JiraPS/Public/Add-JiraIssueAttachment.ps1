@@ -1,42 +1,18 @@
 function Add-JiraIssueAttachment {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
+    [OutputType( [AtlassianPS.JiraPS.Attachment] )]
     param(
         [Parameter( Mandatory )]
-        [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Issue" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraIssue'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Issue. Expected [JiraPS.Issue] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
         [Alias('Key')]
-        [Object]
+        [AtlassianPS.JiraPS.Issue]
         $Issue,
-        <#
-          #ToDo:CustomClass
-          Once we have custom classes, this can also accept ValueFromPipeline
-        #>
 
         [Parameter( Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
         [ValidateScript(
             {
                 if (-not (Test-Path $_ -PathType Leaf)) {
-                    $exception = ([System.ArgumentException]"File not found") #fix code highlighting]
+                    $exception = ([System.ArgumentException]'File not found')
                     $errorId = 'ParameterValue.FileNotFound'
                     $errorCategory = 'ObjectNotFound'
                     $errorTarget = $_
@@ -65,31 +41,23 @@ function Add-JiraIssueAttachment {
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
 
-        $resourceURi = "{0}/attachments"
+        $IssueUrl = Resolve-JiraIssueUrl -Issue $Issue
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        if (@($Issue).Count -ne 1) {
-            $exception = ([System.ArgumentException]"invalid Issue provided")
-            $errorId = 'ParameterValue.JiraIssue'
-            $errorCategory = 'InvalidArgument'
-            $errorTarget = $_
-            $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-            $errorItem.ErrorDetails = "Only one Issue can be provided at a time."
-            $PSCmdlet.ThrowTerminatingError($errorItem)
-        }
-
-        # Find the proper object for the Issue
-        $issueObj = Resolve-JiraIssueObject -InputObject $Issue -Credential $Credential
-
         foreach ($file in $FilePath) {
             $file = Resolve-FilePath -Path $file
 
-            $enc = [System.Text.Encoding]::GetEncoding("iso-8859-1")
+            $enc = [System.Text.Encoding]::GetEncoding('iso-8859-1')
             $boundary = [System.Guid]::NewGuid().ToString()
+
+            $headers = @{
+                'Content-Type'      = "multipart/form-data; boundary=`"$boundary`""
+                'X-Atlassian-Token' = 'nocheck'
+            }
 
             $fileName = Split-Path -Path $file -Leaf
             $readFile = [System.IO.File]::ReadAllBytes($file)
@@ -104,26 +72,21 @@ Content-Type: application/octet-stream
 --{0}--
 '@ -f $boundary, $fileName, $fileEnc
 
-            $headers = @{
-                'X-Atlassian-Token' = 'nocheck'
-                'Content-Type'      = "multipart/form-data; boundary=`"$boundary`""
-            }
-
             $parameter = @{
-                URI        = $resourceURi -f $issueObj.RestURL
-                Method     = "POST"
+                URI        = "$IssueUrl/attachments"
+                Method     = 'POST'
                 Body       = $bodyLines
                 Headers    = $headers
                 RawBody    = $true
+                OutputType = 'JiraAttachment'
                 Credential = $Credential
+                Cmdlet     = $PSCmdlet
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($PSCmdlet.ShouldProcess($IssueObj.Key, "Adding attachment '$($fileName)'.")) {
-                $rawResult = Invoke-JiraMethod @parameter
+            if ($PSCmdlet.ShouldProcess($Issue.ToString(), "Adding attachment '$fileName'.")) {
+                $result = Invoke-JiraMethod @parameter
 
-                if ($PassThru) {
-                    Write-Output (ConvertTo-JiraAttachment -InputObject $rawResult)
-                }
+                if ($PassThru) { $result }
             }
         }
     }

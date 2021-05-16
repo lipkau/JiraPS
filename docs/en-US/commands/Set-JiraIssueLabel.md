@@ -77,7 +77,7 @@ This example removes all labels from the issue TEST-01.
 
 ### -Issue
 
-Issue of which the labels should be manipulated.
+Issue of which the labels Should be manipulated.
 
 Can be a `JiraPS.Issue` object, issue key, or internal issue ID.
 
@@ -178,7 +178,7 @@ Accept wildcard characters: False
 
 ### -PassThru
 
-Whether output should be provided after invoking this function.
+Whether output Should be provided after invoking this function.
 
 ```yaml
 Type: SwitchParameter

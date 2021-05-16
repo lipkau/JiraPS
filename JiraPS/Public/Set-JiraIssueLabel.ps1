@@ -1,31 +1,11 @@
-﻿function Set-JiraIssueLabel {
+function Set-JiraIssueLabel {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess, DefaultParameterSetName = 'ReplaceLabels' )]
+    [OutputType( [AtlassianPS.JiraPS.Issue] )]
     param(
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName )]
-        [ValidateNotNullOrEmpty()]
-        [ValidateScript(
-            {
-                if (("JiraPS.Issue" -notin $_.PSObject.TypeNames) -and (($_ -isnot [String]))) {
-                    $exception = ([System.ArgumentException]"Invalid Type for Parameter") #fix code highlighting]
-                    $errorId = 'ParameterType.NotJiraIssue'
-                    $errorCategory = 'InvalidArgument'
-                    $errorTarget = $_
-                    $errorItem = New-Object -TypeName System.Management.Automation.ErrorRecord $exception, $errorId, $errorCategory, $errorTarget
-                    $errorItem.ErrorDetails = "Wrong object type provided for Issue. Expected [JiraPS.Issue] or [String], but was $($_.GetType().Name)"
-                    $PSCmdlet.ThrowTerminatingError($errorItem)
-                    <#
-                      #ToDo:CustomClass
-                      Once we have custom classes, this check can be done with Type declaration
-                    #>
-                }
-                else {
-                    return $true
-                }
-            }
-        )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
         [Alias('Key')]
-        [Object[]]
+        [AtlassianPS.JiraPS.Issue[]]
         $Issue,
 
         [Parameter( Mandatory, ParameterSetName = 'ReplaceLabels' )]
@@ -50,6 +30,7 @@
         [System.Management.Automation.Credential()]
         $Credential = [System.Management.Automation.PSCredential]::Empty,
 
+        [Parameter()]
         [Switch]
         $PassThru
     )
@@ -66,18 +47,12 @@
             Write-Verbose "[$($MyInvocation.MyCommand.Name)] Processing [$_issue]"
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Processing `$_issue [$_issue]"
 
-            # Find the proper object for the Issue
-            $issueObj = Resolve-JiraIssueObject -InputObject $_issue -Credential $Credential
+            if (-not $_issue.RestURL) {
+                $_issue = Get-JiraIssue -Issue $_issue.Key -Credential $Credential -ErrorAction Stop
+            }
 
-            $labels = [System.Collections.ArrayList]@($issueObj.labels | Where-Object {$_})
+            $labels = [System.Collections.ArrayList]@($_issue.labels | Where-Object { $_ })
 
-            # As of JIRA 6.4, the Add and Remove verbs in the REST API for
-            # updating issues do not support arrays of parameters - you
-            # need to pass a single label to add or remove per API call.
-
-            # Instead, we'll do some fancy footwork with the existing
-            # issue object and use the Set verb for everything, so we only
-            # have to make one call to JIRA.
             switch ($PSCmdlet.ParameterSetName) {
                 'ClearLabels' {
                     Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] Clearing all labels"
@@ -104,25 +79,23 @@
             $requestBody = @{
                 'update' = @{
                     'labels' = @(
-                        @{
-                            'set' = @($labels)
-                        }
+                        @{ 'set' = @($labels) }
                     )
                 }
             }
 
             $parameter = @{
-                URI        = $issueObj.RestURL
+                URI        = $_issue.RestURL
                 Method     = "PUT"
                 Body       = ConvertTo-Json -InputObject $requestBody -Depth 6
                 Credential = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($PSCmdlet.ShouldProcess($IssueObj.Key, "Updating Issue labels")) {
-                Invoke-JiraMethod @parameter
+            if ($PSCmdlet.ShouldProcess($_issue.Key, "Updating Issue labels")) {
+                $null = Invoke-JiraMethod @parameter
 
                 if ($PassThru) {
-                    Get-JiraIssue -Key $issueObj.Key -Credential $Credential
+                    Get-JiraIssue -Issue $_issue.Key -Credential $Credential
                 }
             }
         }

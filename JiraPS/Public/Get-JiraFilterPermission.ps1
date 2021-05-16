@@ -1,17 +1,13 @@
 function Get-JiraFilterPermission {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding( DefaultParameterSetName = 'ById' )]
-    # [OutputType( [JiraPS.FilterPermission] )]
+    [CmdletBinding( )]
+    [OutputType( [AtlassianPS.JiraPS.FilterPermission] )]
     param(
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ByInputObject' )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
-        [PSTypeName('JiraPS.Filter')]
+        [Alias('Id')]
+        [AtlassianPS.JiraPS.Filter[]]
         $Filter,
-
-        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = 'ById')]
-        [ValidateNotNullOrEmpty()]
-        [UInt32[]]
-        $Id,
 
         [Parameter()]
         [System.Management.Automation.PSCredential]
@@ -22,27 +18,29 @@ function Get-JiraFilterPermission {
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
 
-        $resourceURi = "{0}/permission"
+        $server = Get-JiraConfigServer -ErrorAction Stop
+
+        $resourceURi = "$server/rest/api/latest/filter/{0}/permission"
+
+        $parameter = @{
+            Method     = 'GET'
+            OutputType = 'JiraFilterPermission'
+            Credential = $Credential
+            Cmdlet     = $PSCmdlet
+        }
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        if ($PSCmdlet.ParameterSetName -eq 'ById') {
-            $Filter = Get-JiraFilter -Id $Id
-        }
+        # TODO: test that filter has Id
 
         foreach ($_filter in $Filter) {
-            $parameter = @{
-                URI        = $resourceURi -f $_filter.RestURL
-                Method     = "GET"
-                Credential = $Credential
-            }
-            Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            $result = Invoke-JiraMethod @parameter
+            $parameter['Uri'] = $resourceURi -f $_filter.Id
 
-            Write-Output (ConvertTo-JiraFilter -InputObject $_filter -FilterPermissions $result)
+            Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
+            Invoke-JiraMethod @parameter
         }
     }
 

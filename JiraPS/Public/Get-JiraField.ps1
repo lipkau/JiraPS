@@ -7,7 +7,7 @@ function Get-JiraField {
         [String[]]
         $Id,
 
-        [Parameter( Position = 0, Mandatory, ParameterSetName = '_ByName' )]
+        [Parameter( Mandatory, ParameterSetName = '_ByName' )]
         [String[]]
         $Name,
 

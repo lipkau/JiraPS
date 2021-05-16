@@ -1,36 +1,17 @@
 function Remove-JiraIssue {
     # .ExternalHelp ..\JiraPS-help.xml
-    [CmdletBinding(
-        ConfirmImpact = 'High',
-        SupportsShouldProcess,
-        DefaultParameterSetName = "ByInputObject"
-    )]
+    [CmdletBinding( ConfirmImpact = 'High', SupportsShouldProcess, DefaultParameterSetName = "ByInputObject" )]
     param (
-        [Parameter(
-            Mandatory,
-            ValueFromPipeline,
-            Position = 0,
-            ParameterSetName = "ByInputObject"
-        )]
-        [Alias(
-            "Issue"
-        )]
+        [Parameter( Position = 0, Mandatory, ValueFromPipeline, ParameterSetName = "ByInputObject" )]
+        [Alias("Issue")]
         [PSTypeName("JiraPS.Issue")]
         [Object[]]
         $InputObject,
 
         # The issue's ID number or key.
-        [Parameter(
-            Mandatory,
-            Position = 0,
-            ParameterSetName = "ByIssueId"
-        )]
+        [Parameter( Mandatory, Position = 0, ParameterSetName = "ByIssueId" )]
         [ValidateNotNullOrEmpty()]
-        [Alias(
-            "Id",
-            "Key",
-            "issueIdOrKey"
-        )]
+        [Alias( "Id", "Key", "issueIdOrKey" )]
         [String[]]
         $IssueId,
 
@@ -51,7 +32,7 @@ function Remove-JiraIssue {
 
         $server = Get-JiraConfigServer -ErrorAction Stop
 
-        $resourceURi = "$server/rest/api/latest/issue/{0}?deleteSubtasks={1}"
+        $resourceURi = "$server/rest/api/latest/issue/{0}"
 
         if ($Force) {
             Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] -Force was passed. Backing up current ConfirmPreference [$ConfirmPreference] and setting to None"
@@ -73,8 +54,9 @@ function Remove-JiraIssue {
         foreach ($issueItem in $PrimaryIterator) {
 
             if ($PsCmdlet.ParameterSetName -eq "ByIssueId") {
-                $_issue = Get-JiraIssue -Key $issueItem -Credential $Credential -ErrorAction Stop
-            } Else {
+                $_issue = Get-JiraIssue -Issue $issueItem -Credential $Credential -ErrorAction Stop
+            }
+            Else {
                 $_issue = $issueItem
             }
 
@@ -84,21 +66,24 @@ function Remove-JiraIssue {
 
 
             $parameter = @{
-                URI        = $resourceURi -f $_issue.Key,$IncludeSubTasks
-                Method     = "DELETE"
-                Credential = $Credential
-                Cmdlet = $PsCmdlet
+                URI          = $resourceURi -f $_issue.Key
+                Method       = "DELETE"
+                GetParameter = @{
+                    deleteSubtasks = $IncludeSubTasks
+                }
+                Credential   = $Credential
+                Cmdlet       = $PsCmdlet
             }
 
 
             If ($IncludeSubTasks) {
                 $ActionText = "Remove issue and sub-tasks"
-            } Else {
+            }
+            Else {
                 $ActionText = "Remove issue"
             }
 
             if ($PSCmdlet.ShouldProcess($_issue.ToString(), $ActionText)) {
-
                 Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
                 Invoke-JiraMethod @parameter
             }

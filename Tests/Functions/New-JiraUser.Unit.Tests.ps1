@@ -1,30 +1,25 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "New-JiraUser" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
 
-    InModuleScope JiraPS {
+    $jiraServer = 'http://jiraserver.example.com'
 
-        . "$PSScriptRoot/../Shared.ps1"
+    $testUsername = 'powershell-test'
+    $testEmail = "$testUsername@example.com"
+    $testDisplayName = 'Test User'
 
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $testUsername = 'powershell-test'
-        $testEmail = "$testUsername@example.com"
-        $testDisplayName = 'Test User'
-
-        # Trimmed from this example JSON: expand, groups, avatarURL
-        $testJson = @"
+    # Trimmed from this example JSON: expand, groups, avatarURL
+    $testJson = @"
 {
     "self": "$jiraServer/rest/api/2/user?username=testUser",
     "key": "$testUsername",
@@ -35,37 +30,36 @@ Describe "New-JiraUser" -Tag 'Unit' {
 }
 "@
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
-        }
+    Mock Get-JiraConfigServer -ModuleName JiraPS {
+        Write-Output $jiraServer
+    }
 
-        Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/user" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            ConvertFrom-Json $testJson
-        }
+    Mock Invoke-JiraMethod -ModuleName JiraPS -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/user" } {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        ConvertFrom-Json $testJson
+    }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
-        }
+    # Generic catch-all. This will throw an exception if we forgot to mock something.
+    Mock Invoke-JiraMethod -ModuleName JiraPS {
+        Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
+        throw "Unidentified call to Invoke-JiraMethod"
+    }
 
-        #############
-        # Tests
-        #############
+    #############
+    # Tests
+    #############
 
-        It "Creates a user in JIRA and returns a result" {
-            $newResult = New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName
-            $newResult | Should Not BeNullOrEmpty
-        }
+    It "Creates a user in JIRA and returns a result" {
+        $newResult = New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName
+        $newResult | Should -Not -BeNullOrEmpty
+    }
 
-        Describe "Output checking" {
-            Mock ConvertTo-JiraUser { }
-            New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName
+    Describe "Output checking" {
+        Mock ConvertTo-JiraUser { }
+        New-JiraUser -UserName $testUsername -EmailAddress $testEmail -DisplayName $testDisplayName
 
-            It "Uses ConvertTo-JiraUser to beautify output" {
-                Assert-MockCalled 'ConvertTo-JiraUser'
-            }
+        It "Uses ConvertTo-JiraUser to beautify output" {
+            Assert-MockCalled 'ConvertTo-JiraUser'
         }
     }
 }

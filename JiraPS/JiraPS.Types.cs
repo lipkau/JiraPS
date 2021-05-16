@@ -133,11 +133,6 @@ namespace AtlassianPS
             {
                 if (value.Contains(" "))
                     Name = value;
-                else if (value.ToLower() == value)
-                {
-                    Id = value;
-                    Key = value;
-                }
                 else if (value.ToLower().Contains("customfield_"))
                 {
                     Id = value.ToLower();
@@ -201,6 +196,8 @@ namespace AtlassianPS
         [Serializable]
         public class FilterPermission
         {
+            public FilterPermission(UInt64 value) { Id = value; }
+            public FilterPermission(String value) { Id = UInt64.Parse(value); }
             public FilterPermission() { }
 
             public UInt64 Id { get; set; }

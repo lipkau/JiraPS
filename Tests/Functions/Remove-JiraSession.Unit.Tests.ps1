@@ -1,19 +1,16 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
 
 Describe "Remove-JiraSession" -Tag 'Unit' {
 
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
+        Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
         Invoke-InitTest $PSScriptRoot
 
-        Import-Module $env:BHManifestToTest -Force
+        Import-Module "$PSScriptRoot/../../JiraPS" -Force
     }
     AfterAll {
         Invoke-TestCleanup
     }
-
-    . "$PSScriptRoot/../Shared.ps1"
 
     #region Mocks
     Mock Get-JiraSession -ModuleName JiraPS {
@@ -24,7 +21,9 @@ Describe "Remove-JiraSession" -Tag 'Unit' {
     Describe "Sanity checking" {
         $command = Get-Command -Name Remove-JiraSession
 
-        defParam $command 'Session'
+        It "has a parameter 'Session' of type [Object]" {
+            $command | Should -HaveParameter "Session" -Type [Object]
+        }
     }
 
     Describe "Behavior testing" {

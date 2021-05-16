@@ -16,8 +16,9 @@ Make changes to an existing Filter.
 ## SYNTAX
 
 ```powershell
-Set-JiraFilter [-InputObject] <Object> [[-Name] <String>] [[-Description] <String>] [[-JQL] <String>]
- [-Favorite] [[-Credential] <PSCredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
+Set-JiraFilter [-Filter] <AtlassianPS.JiraPS.Filter> [[-Name] <String>]
+[[-Description] <String>] [[-JQL] <String>] [-Favorite]
+[[-Credential] <PSCredential>] [-WhatIf] [-Confirm] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -31,7 +32,7 @@ If no changing parameter is provided, no action will be performed.
 ### Example 1
 
 ```powershell
-Set-JiraFilter -InputObject (Get-JiraFilter "12345") -Name "NewName"
+Set-JiraFilter -Filter "12345" -Name "NewName"
 ```
 
 Changes the name of filter "12345" to "NewName"
@@ -40,12 +41,11 @@ Changes the name of filter "12345" to "NewName"
 
 ```powershell
 $filterData = @{
-    InputObject = Get-JiraFilter "12345"
     Description = "A new description"
     JQL = "project = TV AND type = Bug"
     Favorite = $true
 }
-Set-JiraFilter @filterData
+Get-JiraFilter "12345" | Set-JiraFilter @filterData
 ```
 
 Changes the description and JQL of filter "12345" and make it a favorite
@@ -62,14 +62,14 @@ Remove all favorite filters where the name does not start with "My"
 
 ## PARAMETERS
 
-### -InputObject
+### -Filter
 
 Filter object to be changed.
 
 Object can be retrieved with `Get-JiraFilter`
 
 ```yaml
-Type: JiraPS.Filter
+Type: AtlassianPS.JiraPS.Filter
 Parameter Sets: (All)
 Aliases:
 
@@ -134,7 +134,7 @@ Accept wildcard characters: False
 
 ### -Favorite
 
-Boolean flag if the filter should be marked as favorite for the user.
+Boolean flag if the filter Should be marked as favorite for the user.
 
 ```yaml
 Type: Boolean
@@ -200,20 +200,26 @@ Accept wildcard characters: False
 
 ### CommonParameters
 
-This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable, -InformationAction, -InformationVariable, -OutVariable, -OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
-For more information, see about_CommonParameters (http://go.microsoft.com/fwlink/?LinkID=113216).
+This cmdlet supports the common parameters: -Debug, -ErrorAction,
+-ErrorVariable, -InformationAction, -InformationVariable, -OutVariable,
+-OutBuffer, -PipelineVariable, -Verbose, -WarningAction, and -WarningVariable.
+For more information, see about_CommonParameters
+(<http://go.microsoft.com/fwlink/?LinkID=113216>).
 
 ## INPUTS
 
-### [JiraPS.Filter] / [String]
+### [AtlassianPS.JiraPS.Filter]
+
+### [String]
 
 ## OUTPUTS
 
-### [JiraPS.Filter]
+### [AtlassianPS.JiraPS.Filter]
 
 ## NOTES
 
-This function requires either the `-Credential` parameter to be passed or a persistent JIRA session.
+This function requires either the `-Credential` parameter to be passed
+or a persistent JIRA session.
 See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 

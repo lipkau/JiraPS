@@ -1,11 +1,12 @@
 function Set-JiraFilter {
     # .ExternalHelp ..\JiraPS-help.xml
     [CmdletBinding( SupportsShouldProcess )]
+    [OutputType([AtlassianPS.JiraPS.Filter])]
     param(
         [Parameter( Mandatory, ValueFromPipeline )]
         [ValidateNotNullOrEmpty()]
-        [PSTypeName('JiraPS.Filter')]
-        $InputObject,
+        [AtlassianPS.JiraPS.Filter]
+        $Filter,
 
         [Parameter()]
         [ValidateNotNullOrEmpty()]
@@ -34,38 +35,42 @@ function Set-JiraFilter {
 
     begin {
         Write-Verbose "[$($MyInvocation.MyCommand.Name)] Function started"
+
+        $server = Get-JiraConfigServer -ErrorAction Stop
+
+        $resourceURi = "$server/rest/api/latest/filter/{0}"
     }
 
     process {
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] ParameterSetName: $($PsCmdlet.ParameterSetName)"
         Write-DebugMessage "[$($MyInvocation.MyCommand.Name)] PSBoundParameters: $($PSBoundParameters | Out-String)"
 
-        $requestBody = @{}
+        # TODO: validate filter has id
+
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Name")) {
-            $requestBody["name"] = $Name
+            $Filter.Name = $Name
         }
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Description")) {
-            $requestBody["description"] = $Description
+            $Filter.Description = $Description
         }
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("JQL")) {
-            $requestBody["jql"] = $JQL
+            $Filter.JQL = $JQL
         }
         if ($PSCmdlet.MyInvocation.BoundParameters.ContainsKey("Favorite")) {
-            $requestBody["favourite"] = $Favorite
+            $Filter.Favorite = $Favorite
         }
 
         if ($requestBody.Keys.Count) {
             $parameter = @{
-                URI        = $InputObject.RestURL
+                URI        = $resourceURi -f $Filter.Id
                 Method     = "PUT"
-                Body       = ConvertTo-Json -InputObject $requestBody
+                Body       = ConvertTo-Json -InputObject ($requestBody | Select-Object Name, Description, JQL, Favorite)
+                OutputType = "JiraFilter"
                 Credential = $Credential
             }
             Write-Debug "[$($MyInvocation.MyCommand.Name)] Invoking JiraMethod with `$parameter"
-            if ($PSCmdlet.ShouldProcess($InputObject.Name, "Update Filter")) {
-                $result = Invoke-JiraMethod @parameter
-
-                Write-Output (ConvertTo-JiraFilter -InputObject $result)
+            if ($PSCmdlet.ShouldProcess($Filter.ToString(), "Update Filter")) {
+                Invoke-JiraMethod @parameter
             }
         }
     }

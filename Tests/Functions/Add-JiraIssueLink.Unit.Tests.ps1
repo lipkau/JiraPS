@@ -1,86 +1,146 @@
-#requires -modules BuildHelpers
-#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "4.10.1" }
+#requires -modules @{ ModuleName = "Pester"; ModuleVersion = "5.0" }
+
+Import-Module "$PSScriptRoot/../../JiraPS" -Force
+Import-Module "$PSScriptRoot/../../Tools/TestTools.psm1" -Force
 
 Describe 'Add-JiraIssueLink' -Tag 'Unit' {
-
     BeforeAll {
-        Import-Module "$PSScriptRoot/../../../Tools/TestTools.psm1" -force
-        Invoke-InitTest $PSScriptRoot
+        #region Mock
+        Add-CommonMocks
 
-        Import-Module $env:BHManifestToTest -Force
+        Add-MockGetJiraConfigServer
+
+        Add-MockGetJiraIssue
+
+        Mock Invoke-JiraMethod -ParameterFilter {
+            $Method -eq 'Post' -and
+            $URI -like '*/issueLink'
+        } {
+            Write-MockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri; Body = $Body }
+        }
+        #endregion Mock
     }
-    AfterAll {
-        Invoke-TestCleanup
+
+    Describe 'Behavior checking' {
+        BeforeAll {
+            $issue = $mockedJiraIssue
+            $issueLink = $mockedJiraIssueLink
+        }
+
+        It 'Adds a new IssueLink' {
+            Add-JiraIssueLink -Issue $issue -IssueLink $issueLink -Comment "this must be done first." -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 1
+                Scope       = 'It'
+            }
+            Assert-MockCalled @assertMockCalledSplat
+        }
     }
 
-    InModuleScope JiraPS {
-
-        . "$PSScriptRoot/../Shared.ps1"
-
-        $jiraServer = 'http://jiraserver.example.com'
-
-        $issueKey = "TEST-01"
-        $issueLink = [PSCustomObject]@{
-            outwardIssue = [PSCustomObject]@{key = "TEST-10" }
-            type         = [PSCustomObject]@{name = "Composition" }
+    Describe 'Input testing' {
+        BeforeAll {
+            $issue = $mockedJiraIssue
+            $issueLink = $mockedJiraIssueLink
         }
 
-        Mock Get-JiraConfigServer -ModuleName JiraPS {
-            Write-Output $jiraServer
+        It 'fetches the Issue if an incomplete object was provided' {
+            Add-JiraIssueLink -Issue 'TEST-001' -IssueLink $issueLink -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 1 -Scope It
         }
 
-        Mock Get-JiraIssue -ParameterFilter { $Key -eq $issueKey } {
-            $object = [PSCustomObject]@{
-                Key = $issueKey
+        It 'uses the provided Issue when a complete object was provided' {
+            Add-JiraIssueLink -Issue $issue -IssueLink $issueLink -ErrorAction Stop
+
+            Assert-MockCalled -CommandName Get-JiraIssue -ModuleName JiraPS -Exactly -Times 0 -Scope It
+        }
+
+        It 'accepts multiple IssueLinks' {
+            Add-JiraIssueLink -Issue $issue -IssueLink $issueLink, $issueLink, $issueLink -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName = 'Invoke-JiraMethod'
+                Exactly     = $true
+                Times       = 3
+                Scope       = 'It'
             }
-            $object.PSObject.TypeNames.Insert(0, 'JiraPS.Issue')
-            return $object
+            Assert-MockCalled @assertMockCalledSplat
         }
 
-        Mock Resolve-JiraIssueObject -ModuleName JiraPS {
-            Get-JiraIssue -Key $Issue
+        It 'accepts Issues over the pipeline' {
+            $issue | Add-JiraIssueLink -IssueLink $issueLink -ErrorAction Stop
+        }
+    }
+
+    Describe 'Forming of the request' {
+        BeforeAll {
+            $issue = $mockedJiraIssue
+            $issueLink = $mockedJiraIssueLink
         }
 
-        # Generic catch-all. This will throw an exception if we forgot to mock something.
-        Mock Invoke-JiraMethod -ModuleName JiraPS {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            throw "Unidentified call to Invoke-JiraMethod"
+        It 'constructs a valid request for adding an issue link' {
+            Add-JiraIssueLink -Issue $issue -IssueLink $issueLink -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
+                ParameterFilter = {
+                    $Method -eq 'Post' -and
+                    $Uri -eq 'http://jiraserver.example.com/rest/api/latest/issueLink' -and
+                    (ConvertFrom-Json $Body).type.name -eq 'Composition' -and
+                    (ConvertFrom-Json $Body).inwardIssue.key -eq 'TEST-001' -and
+                    (ConvertFrom-Json $Body).outwardIssue.key -eq 'TEST-002'
+                }
+            }
+            Assert-MockCalled @assertMockCalledSplat
         }
-
-        Mock Invoke-JiraMethod -ParameterFilter { $Method -eq 'POST' -and $URI -eq "$jiraServer/rest/api/latest/issueLink" } {
-            ShowMockInfo 'Invoke-JiraMethod' @{ Method = $Method; Uri = $Uri }
-            return $true
-        }
-
-        #############
-        # Tests
-        #############
-
-        Describe "Sanity checking" {
-            $command = Get-Command -Name Add-JiraIssueLink
-
-            defParam $command 'Issue'
-            defParam $command 'IssueLink'
-            defParam $command 'Comment'
-            defParam $command 'Credential'
-        }
-
-        Describe "Functionality" {
-
-            It 'Adds a new IssueLink' {
-                { Add-JiraIssueLink -Issue $issueKey -IssueLink $issueLink } | Should Not Throw
-
-                Assert-MockCalled -CommandName Invoke-JiraMethod -ModuleName JiraPS -Exactly -Times 1 -Scope It
+        It 'constructs a valid request for adding an issue link' {
+            $issueLink = [AtlassianPS.JiraPS.IssueLink]@{
+                type        = [AtlassianPS.JiraPS.IssueLinkType]@{name = 'Composition' }
+                inwardIssue = [AtlassianPS.JiraPS.Issue]@{key = 'TEST-003' }
             }
 
-            It 'Validates the IssueType provided' {
-                $issueLink = [PSCustomObject]@{ type = "foo" }
-                { Add-JiraIssueLink -Issue $issueKey -IssueLink $issueLink } | Should Throw
-            }
+            Add-JiraIssueLink -Issue $issue -IssueLink $issueLink -ErrorAction Stop
 
-            It 'Validates pipeline input object' {
-                { "foo" | Add-JiraIssueLink -IssueLink $issueLink } | Should Throw
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
+                ParameterFilter = {
+                    $Method -eq 'Post' -and
+                    $Uri -eq 'http://jiraserver.example.com/rest/api/latest/issueLink' -and
+                    (ConvertFrom-Json $Body).type.name -eq 'Composition' -and
+                    (ConvertFrom-Json $Body).inwardIssue.key -eq 'TEST-003' -and
+                    (ConvertFrom-Json $Body).outwardIssue.key -eq 'TEST-001'
+                }
             }
+            Assert-MockCalled @assertMockCalledSplat
+        }
+
+        It 'constructs a valid request for adding an issue link with a comment' {
+            Add-JiraIssueLink -Issue $issue -IssueLink $issueLink -Comment "this must be done first." -ErrorAction Stop
+
+            $assertMockCalledSplat = @{
+                CommandName     = 'Invoke-JiraMethod'
+                Exactly         = $true
+                Times           = 1
+                Scope           = 'It'
+                ParameterFilter = {
+                    $Method -eq 'Post' -and
+                    $Uri -eq 'http://jiraserver.example.com/rest/api/latest/issueLink' -and
+                    (ConvertFrom-Json $Body).type.name -eq 'Composition' -and
+                    (ConvertFrom-Json $Body).inwardIssue.key -eq 'TEST-001' -and
+                    (ConvertFrom-Json $Body).outwardIssue.key -eq 'TEST-002' -and
+                    (ConvertFrom-Json $Body).comment.body -eq 'this must be done first.'
+                }
+            }
+            Assert-MockCalled @assertMockCalledSplat
         }
     }
 }

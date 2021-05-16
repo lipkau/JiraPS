@@ -15,17 +15,11 @@ Returns information about a filter in JIRA
 
 ## SYNTAX
 
-### ByFilterID (Default)
+### ByFilter (Default)
 
 ```powershell
-Get-JiraFilter [-Id] <String[]> [-Credential <PSCredential>] [<CommonParameters>]
-```
-
-### ByInputObject
-
-```powershell
-Get-JiraFilter -InputObject <Object[]> [-Credential <PSCredential>]
- [<CommonParameters>]
+Get-JiraFilter [-Filter] <AtlassianPS.JiraPS.Filter[]>
+[-Credential <PSCredential>] [<CommonParameters>]
 ```
 
 ### MyFavorite
@@ -50,21 +44,12 @@ The easiest way to obtain the ID of a filter is to load the filter in the
 ### EXAMPLE 1
 
 ```powershell
-Get-JiraFilter -Id 12345
+Get-JiraFilter -Filter 12345
 ```
 
-Gets a reference to filter ID 12345 from JIRA
+Gets a reference to Filter Id 12345 from JIRA
 
 ### EXAMPLE 2
-
-```powershell
-$filterObject | Get-JiraFilter
-```
-
-Gets the information of a filter by providing a filter object
-
-
-### EXAMPLE 3
 
 ```powershell
 Get-JiraFilter -Favorite
@@ -74,33 +59,17 @@ Gets all filters makes as "favorite" by the user
 
 ## PARAMETERS
 
-### -Id
+### -Filter
 
-ID of the filter to search for.
+Filter to be retrieved.
 
 ```yaml
-Type: String[]
-Parameter Sets: ByFilterID
+Type: AtlassianPS.JiraPS.Filter[]
+Parameter Sets: ByFilter
 Aliases:
 
 Required: True
 Position: 1
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -InputObject
-
-Object of the filter to search for.
-
-```yaml
-Type: Object[]
-Parameter Sets: ByInputObject
-Aliases:
-
-Required: True
-Position: Named
 Default value: None
 Accept pipeline input: True (ByValue)
 Accept wildcard characters: False
@@ -149,13 +118,13 @@ For more information, see about_CommonParameters
 
 ## INPUTS
 
-### [JiraPS.Filter] / [String]
+### [AtlassianPS.JiraPS.Filter]
 
 The filter to look up in JIRA. This can be a String (filter ID) or a JiraPS.Filter object.
 
 ## OUTPUTS
 
-### [JiraPS.Filter]
+### [AtlassianPS.JiraPS.Filter]
 
 ## NOTES
 
@@ -165,6 +134,8 @@ See `New-JiraSession` for more details.
 If neither are supplied, this function will run with anonymous access to JIRA.
 
 ## RELATED LINKS
+
+[Find-JiraFilter](../Find-JiraFilter/)
 
 [New-JiraFilter](../New-JiraFilter/)
 
