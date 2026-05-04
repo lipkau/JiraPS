@@ -198,6 +198,9 @@
             $_headers.Remove("Content-Type")
         }
         elseif ($Body) {
+            # Only default to JSON when JiraPS is sending a request body. Passing
+            # ContentType through file transfers interferes with Jira attachment
+            # uploads/downloads because Invoke-WebRequest handles those payloads.
             $splatParameters["ContentType"] = $script:DefaultContentType
         }
 
